@@ -3,7 +3,7 @@ mod events;
 mod storage;
 mod types;
 
-use events::{PROPOSAL_TOPIC, REGISTER_TOPIC};
+use events::{INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC};
 use storage::Storage;
 use types::{DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureTxEscrow};
 
@@ -25,6 +25,9 @@ impl EscrowContract {
     pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
         DataKey::AssetAddress.set(&env, &asset_address);
         DataKey::OracleAddress.set(&env, &oracle_address);
+
+        env.events()
+            .publish((INIT_TOPIC,), (asset_address, oracle_address));
     }
 
     /**
