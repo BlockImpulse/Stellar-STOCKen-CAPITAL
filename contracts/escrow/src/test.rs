@@ -1,2 +1,2 @@
 pub mod initialize;
-pub mod test;
+pub mod add_proposal;
