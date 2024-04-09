@@ -38,6 +38,7 @@ impl EscrowContract {
 
         // Save the proposal
         DataKey::Proposal(escrow_id).set(&env, &propose);
+        DataKey::ProposalCounter.set(&env, &(escrow_id + 1));
     }
 
     pub fn get_proposal(env: &Env, escrow_id: u32) -> EscrowProposal {
@@ -54,7 +55,7 @@ impl EscrowContract {
     the same UUID but with some hex values with a uppercase or lowercase, it
     will lead to the contract to identify it as two diff Ids.
     */
-    pub fn register_escrow(env: Env, signaturit_id: String) {}
+    pub fn register_escrow(_env: Env, _signaturit_id: String) {}
 }
 
 mod test;
