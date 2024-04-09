@@ -1,18 +1,20 @@
 use crate::storage;
 use soroban_sdk::{
-    contracterror, contracttype, Address, BytesN, Env, IntoVal, String, TryFromVal, Val,
+    contracterror, contracttype, Address, Env, IntoVal, String, TryFromVal, Val, U256,
 };
 
 #[contracttype]
 pub enum DataKey {
     ProposalCounter,
     Proposal(u32),
+    SignatureProcess(u32),
 }
 
 impl storage::Storage for DataKey {
     fn get<V: TryFromVal<Env, Val>>(&self, env: &Env) -> Option<V> {
         match self {
             DataKey::Proposal(_) | DataKey::ProposalCounter => storage::Persistent::get(env, self),
+            DataKey::SignatureProcess(_) => storage::Temporary::get(env, self),
         }
     }
 
@@ -21,12 +23,14 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::ProposalCounter => {
                 storage::Persistent::set(env, self, val)
             }
+            DataKey::SignatureProcess(_) => storage::Temporary::set(env, self, val),
         }
     }
 
     fn has(&self, env: &Env) -> bool {
         match self {
             DataKey::Proposal(_) | DataKey::ProposalCounter => storage::Persistent::has(env, self),
+            DataKey::SignatureProcess(_) => storage::Temporary::has(env, self),
         }
     }
 
@@ -39,6 +43,9 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::ProposalCounter => {
                 storage::Persistent::extend(env, self, min_ledger_to_live)
             }
+            DataKey::SignatureProcess(_) => {
+                storage::Temporary::extend(env, self, min_ledger_to_live)
+            }
         };
         self
     }
@@ -48,6 +55,7 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::ProposalCounter => {
                 storage::Persistent::remove(env, self)
             }
+            DataKey::SignatureProcess(_) => storage::Temporary::remove(env, self),
         }
     }
 }
@@ -73,6 +81,30 @@ pub struct EscrowProposal {
     Owner of the proposal, who will receive the fund after success
      */
     pub owner: Address,
+
+    /**
+     * The minimun funds asked by the proposal
+     */
+    pub min_funds: U256,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SignatureTxEscrow {
+    /**
+     * The transaction escrow ID is the signature ID from Signaturit.
+     * It is an UUID (36 bytes length), for example: '6f6c974e-2910-11e4-b3d4-0aa7697eb409'
+     */
+    pub id: String,
+    /**
+     * Address of the user that pick the propose
+     */
+    pub seller: Address,
+    /**
+     * Address of the owner of the propose and who will receive the funds if success
+     */
+    pub receiver: Address,
+    pub funds: U256,
 }
 
 #[contracterror]
@@ -101,16 +133,4 @@ pub enum SignatureStatus {
     Canceled = 0,
     Actived = 1,
     Picked = 2,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SignatureTxEscrow {
-    /**
-     * The transaction escrow ID is the signature ID from Signaturit.
-     * It is an UUID (36 bytes length), for example: '6f6c974e-2910-11e4-b3d4-0aa7697eb409'
-     */
-    pub id: BytesN<36>,
-    pub seller: Address,
-    pub receiver: Address,
 }
