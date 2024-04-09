@@ -20,6 +20,11 @@ fn test_add_proposal() {
     let contract_id = env.register_contract(None, EscrowContract);
     let escrow_client = EscrowContractClient::new(&env, &contract_id);
 
+    // Init the escrow
+    let mock_asset_address = Address::generate(&env);
+    let mock_oracle_address = Address::generate(&env);
+    escrow_client.initialize(&mock_asset_address, &mock_oracle_address);
+
     let stocken_id = String::from_str(&env, STOCKEN_ID_1);
     let proposer_address = Address::generate(&env);
     let amount_asked = U256::from_u32(&env, 900000u32);
@@ -50,6 +55,11 @@ fn test_add_multiple_proposal() {
     let env = Env::default();
     let contract_id = env.register_contract(None, EscrowContract);
     let escrow_client = EscrowContractClient::new(&env, &contract_id);
+
+    // Init the escrow
+    let mock_asset_address = Address::generate(&env);
+    let mock_oracle_address = Address::generate(&env);
+    escrow_client.initialize(&mock_asset_address, &mock_oracle_address);
 
     // Data for proposals
     let stocken_id_1 = String::from_str(&env, STOCKEN_ID_1);
