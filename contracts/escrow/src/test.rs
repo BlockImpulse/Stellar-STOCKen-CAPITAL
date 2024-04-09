@@ -13,9 +13,7 @@ use soroban_sdk::{
 // keccak256(STOCKEN_ID_1)
 const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
 // keccak256(STOCKEN_ID_2)
-const _STOCKEN_ID_2: &str = "af8f0b8ba4749d7a83edcd03a18e3ee3807fca630f8a18e8e59be53ea15c9e95";
-// keccak256(STOCKEN_ID_3)
-const _STOCKEN_ID_3: &str = "b04803e756cd42e63238ff15658eac8b869c8318991a9c686005e2f5ebd28bc7";
+const STOCKEN_ID_2: &str = "af8f0b8ba4749d7a83edcd03a18e3ee3807fca630f8a18e8e59be53ea15c9e95";
 
 #[test]
 fn test_add_proposal() {
@@ -43,6 +41,59 @@ fn test_add_proposal() {
 
     assert!(
         env.events().all().contains(event_expected),
+        "Wrong event data emitted"
+    );
+}
+
+#[test]
+fn test_add_multiple_proposal() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, EscrowContract);
+    let escrow_client = EscrowContractClient::new(&env, &contract_id);
+
+    // Data for proposals
+    let stocken_id_1 = String::from_str(&env, STOCKEN_ID_1);
+    let proposer_address_1 = Address::generate(&env);
+
+    let stocken_id_2 = String::from_str(&env, STOCKEN_ID_2);
+    let proposer_address_2 = Address::generate(&env);
+
+    escrow_client.add_proposal(&stocken_id_1, &proposer_address_1);
+    escrow_client.add_proposal(&stocken_id_2, &proposer_address_2);
+
+    let expected_proposal_1 = EscrowProposal {
+        escrow_id: 0u32,
+        stocken_proposal_id: stocken_id_1,
+        owner: proposer_address_1,
+        status: ProposalStatus::Actived,
+    };
+
+    let expected_proposal_2 = EscrowProposal {
+        escrow_id: 1u32,
+        stocken_proposal_id: stocken_id_2,
+        owner: proposer_address_2,
+        status: ProposalStatus::Actived,
+    };
+
+    let event_expected_1 = (
+        contract_id.clone(),
+        (symbol_short!("Proposal"), symbol_short!("Added")).into_val(&env),
+        expected_proposal_1.into_val(&env),
+    );
+
+    let event_expected_2 = (
+        contract_id.clone(),
+        (symbol_short!("Proposal"), symbol_short!("Added")).into_val(&env),
+        expected_proposal_2.into_val(&env),
+    );
+
+    assert!(
+        env.events().all().contains(event_expected_1),
+        "Wrong event data emitted"
+    );
+
+    assert!(
+        env.events().all().contains(event_expected_2),
         "Wrong event data emitted"
     );
 }
