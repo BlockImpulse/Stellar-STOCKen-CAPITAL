@@ -5,6 +5,8 @@ use soroban_sdk::{
 
 #[contracttype]
 pub enum DataKey {
+    AssetAddress,
+    OracleAddress,
     Proposal(String),
     SignatureProcess(String),
 }
@@ -12,21 +14,27 @@ pub enum DataKey {
 impl storage::Storage for DataKey {
     fn get<V: TryFromVal<Env, Val>>(&self, env: &Env) -> Option<V> {
         match self {
-            DataKey::Proposal(_) => storage::Persistent::get(env, self),
+            DataKey::Proposal(_) | &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Persistent::get(env, self)
+            }
             DataKey::SignatureProcess(_) => storage::Temporary::get(env, self),
         }
     }
 
     fn set<V: IntoVal<Env, Val>>(&self, env: &Env, val: &V) {
         match self {
-            DataKey::Proposal(_) => storage::Persistent::set(env, self, val),
+            DataKey::Proposal(_) | &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Persistent::set(env, self, val)
+            }
             DataKey::SignatureProcess(_) => storage::Temporary::set(env, self, val),
         }
     }
 
     fn has(&self, env: &Env) -> bool {
         match self {
-            DataKey::Proposal(_) => storage::Persistent::has(env, self),
+            DataKey::Proposal(_) | &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Persistent::has(env, self)
+            }
             DataKey::SignatureProcess(_) => storage::Temporary::has(env, self),
         }
     }
@@ -37,7 +45,9 @@ impl storage::Storage for DataKey {
         }
 
         match self {
-            DataKey::Proposal(_) => storage::Persistent::extend(env, self, min_ledger_to_live),
+            DataKey::Proposal(_) | &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Persistent::extend(env, self, min_ledger_to_live)
+            }
             DataKey::SignatureProcess(_) => {
                 storage::Temporary::extend(env, self, min_ledger_to_live)
             }
@@ -47,7 +57,9 @@ impl storage::Storage for DataKey {
 
     fn remove(&self, env: &Env) {
         match self {
-            DataKey::Proposal(_) => storage::Persistent::remove(env, self),
+            DataKey::Proposal(_) | &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Persistent::remove(env, self)
+            }
             DataKey::SignatureProcess(_) => storage::Temporary::remove(env, self),
         }
     }
@@ -107,6 +119,7 @@ pub struct SignatureTxEscrow {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum EscrowError {
+    NotInit = 0,
     OnlyOwner = 1,
     OnlyOracle = 2,
     AlreadyProposed = 3,
