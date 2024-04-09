@@ -34,7 +34,7 @@ impl EscrowContract {
         };
 
         env.events()
-            .publish((PROPOSAL_TOPIC, symbol_short!("Added")), propose);
+            .publish((PROPOSAL_TOPIC, symbol_short!("Added")), propose.clone());
 
         // Save the proposal
         DataKey::Proposal(escrow_id).set(&env, &propose);
