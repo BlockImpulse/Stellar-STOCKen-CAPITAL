@@ -1,7 +1,5 @@
 #![cfg(test)]
 
-extern crate std;
-
 use crate::{EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus};
 use soroban_sdk::{
     symbol_short,
