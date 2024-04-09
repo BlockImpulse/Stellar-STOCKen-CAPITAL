@@ -2,26 +2,20 @@
 
 extern crate std;
 
+use crate::{EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
     Address, Env, IntoVal, String, U256,
 };
 
-use crate::{EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus};
-
 // keccak256(STOCKEN_ID_1)
 const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
 // keccak256(STOCKEN_ID_2)
 const STOCKEN_ID_2: &str = "af8f0b8ba4749d7a83edcd03a18e3ee3807fca630f8a18e8e59be53ea15c9e95";
 
-// #[test]
-// fn test_initialize() {
-//     let env = Env::default();
-// }
-
-// #[test]
-fn _test_add_proposal() {
+#[test]
+fn test_add_proposal() {
     let env = Env::default();
     let contract_id = env.register_contract(None, EscrowContract);
     let escrow_client = EscrowContractClient::new(&env, &contract_id);
@@ -51,8 +45,8 @@ fn _test_add_proposal() {
     );
 }
 
-// #[test]
-fn _test_add_multiple_proposal() {
+#[test]
+fn test_add_multiple_proposal() {
     let env = Env::default();
     let contract_id = env.register_contract(None, EscrowContract);
     let escrow_client = EscrowContractClient::new(&env, &contract_id);
