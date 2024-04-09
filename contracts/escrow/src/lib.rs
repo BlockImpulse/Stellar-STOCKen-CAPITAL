@@ -16,7 +16,16 @@ pub struct EscrowContract;
 
 #[contractimpl]
 impl EscrowContract {
-    // fn initialize() {}
+    fn check_initialization(env: &Env) {
+        if !DataKey::AssetAddress.has(env) || !DataKey::OracleAddress.has(env) {
+            panic_with_error!(env, EscrowError::NotInit);
+        }
+    }
+
+    pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
+        DataKey::AssetAddress.set(&env, &asset_address);
+        DataKey::OracleAddress.set(&env, &oracle_address);
+    }
 
     /**
      * Register a new proposal to be picked,
@@ -27,6 +36,8 @@ impl EscrowContract {
         proposer_address: Address,
         min_funds: U256,
     ) {
+        Self::check_initialization(&env);
+
         if DataKey::Proposal(stocken_proposal_id.clone()).has(&env) {
             panic_with_error!(&env, EscrowError::AlreadyProposed);
         }
@@ -60,6 +71,8 @@ impl EscrowContract {
     will lead to the contract to identify it as two diff Ids.
     */
     pub fn register_escrow(env: Env, signaturit_id: String, sender_id: Address, funds: U256) {
+        Self::check_initialization(&env);
+
         let propose: EscrowProposal = Self::get_proposal(&env, signaturit_id.clone());
 
         if propose.status != ProposalStatus::Actived {
