@@ -3,12 +3,12 @@
 extern crate std;
 
 use super::{EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus};
-use soroban_sdk::IntoVal;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
     Address, Env, String,
 };
+use soroban_sdk::{IntoVal, U256};
 
 // keccak256(STOCKEN_ID_1)
 const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
@@ -23,14 +23,16 @@ fn test_add_proposal() {
 
     let stocken_id = String::from_str(&env, STOCKEN_ID_1);
     let proposer_address = Address::generate(&env);
+    let amount_asked = U256::from_u32(&env, 900000u32);
 
-    escrow_client.add_proposal(&stocken_id, &proposer_address);
+    escrow_client.add_proposal(&stocken_id, &proposer_address, &amount_asked);
 
     let expected_proposal = EscrowProposal {
         escrow_id: 0u32,
         stocken_proposal_id: stocken_id,
         owner: proposer_address,
         status: ProposalStatus::Actived,
+        min_funds: amount_asked,
     };
 
     let event_expected = (
@@ -54,18 +56,21 @@ fn test_add_multiple_proposal() {
     // Data for proposals
     let stocken_id_1 = String::from_str(&env, STOCKEN_ID_1);
     let proposer_address_1 = Address::generate(&env);
+    let amount_asked_1 = U256::from_u32(&env, 900000u32);
 
     let stocken_id_2 = String::from_str(&env, STOCKEN_ID_2);
     let proposer_address_2 = Address::generate(&env);
+    let amount_asked_2 = U256::from_u32(&env, 1800000u32);
 
-    escrow_client.add_proposal(&stocken_id_1, &proposer_address_1);
-    escrow_client.add_proposal(&stocken_id_2, &proposer_address_2);
+    escrow_client.add_proposal(&stocken_id_1, &proposer_address_1, &amount_asked_1);
+    escrow_client.add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
 
     let expected_proposal_1 = EscrowProposal {
         escrow_id: 0u32,
         stocken_proposal_id: stocken_id_1,
         owner: proposer_address_1,
         status: ProposalStatus::Actived,
+        min_funds: amount_asked_1,
     };
 
     let expected_proposal_2 = EscrowProposal {
@@ -73,6 +78,7 @@ fn test_add_multiple_proposal() {
         stocken_proposal_id: stocken_id_2,
         owner: proposer_address_2,
         status: ProposalStatus::Actived,
+        min_funds: amount_asked_2,
     };
 
     let event_expected_1 = (
