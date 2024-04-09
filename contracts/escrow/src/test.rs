@@ -28,8 +28,7 @@ fn test_add_proposal() {
     escrow_client.add_proposal(&stocken_id, &proposer_address, &amount_asked);
 
     let expected_proposal = EscrowProposal {
-        escrow_id: 0u32,
-        stocken_proposal_id: stocken_id,
+        escrow_id: stocken_id,
         owner: proposer_address,
         status: ProposalStatus::Actived,
         min_funds: amount_asked,
@@ -66,16 +65,14 @@ fn test_add_multiple_proposal() {
     escrow_client.add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
 
     let expected_proposal_1 = EscrowProposal {
-        escrow_id: 0u32,
-        stocken_proposal_id: stocken_id_1,
+        escrow_id: stocken_id_1,
         owner: proposer_address_1,
         status: ProposalStatus::Actived,
         min_funds: amount_asked_1,
     };
 
     let expected_proposal_2 = EscrowProposal {
-        escrow_id: 1u32,
-        stocken_proposal_id: stocken_id_2,
+        escrow_id: stocken_id_2,
         owner: proposer_address_2,
         status: ProposalStatus::Actived,
         min_funds: amount_asked_2,
