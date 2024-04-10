@@ -79,25 +79,30 @@ impl EscrowContract {
     the same UUID but with some hex values with a uppercase or lowercase, it
     will lead to the contract to identify it as two diff Ids.
     */
-    pub fn register_escrow(env: Env, signaturit_id: String, sender_id: Address, funds: i128) {
+    pub fn register_escrow(
+        env: Env,
+        proposal_id: String,
+        signaturit_id: String,
+        sender_id: Address,
+        funds: i128,
+    ) {
         check_initialization(&env);
 
-        let propose: EscrowProposal = Self::get_proposal(&env, signaturit_id.clone());
+        let mut propose: EscrowProposal = Self::get_proposal(&env, proposal_id.clone());
 
         if propose.status != ProposalStatus::Actived {
             panic_with_error!(&env, EscrowError::PickedOrCanceled);
         }
 
-        if propose.min_funds < funds {
+        if funds < propose.min_funds {
             panic_with_error!(&env, EscrowError::NoEnoughtFunds);
         }
 
         // Require auth of the sender to lock the funds
+        // Move the funds to here
         // Call this at end?? before emit the event
         sender_id.require_auth();
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
-
-        // Move the funds to here
 
         // TODO: Call the Oracle and get the oracle id to identify the tx escrow
         // let oracle_id = oracle.register_new_sign(signaturit_id);
@@ -105,15 +110,25 @@ impl EscrowContract {
 
         let tx_register = SignatureTxEscrow {
             id: signaturit_id.clone(),
+            propose_id: propose.escrow_id.clone(),
             oracle_id,
             buyer: sender_id,
-            receiver: propose.owner,
+            receiver: propose.owner.clone(),
             funds,
         };
 
         env.events()
             .publish((REGISTER_TOPIC, symbol_short!("New")), tx_register.clone());
 
+        // TODO: Change the status to picked to avoid multiple picks to single propose.
+        // Maybe we can do some kind of record for each time of a `proposal_id` is picked
+        // Then the oracle callback will cancel all the signatures process.
+        // But this means that the event reader have to make the API call to signaturit
+        // and I don't know if it's ok.
+        //
+        // This way, the propose can be picked just once per time
+        propose.status = ProposalStatus::Picked;
+        DataKey::Proposal(proposal_id).set(&env, &propose);
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
     }
 }
