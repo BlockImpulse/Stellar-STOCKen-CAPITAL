@@ -1,5 +1,6 @@
 pub mod add_proposal;
 pub mod initialize;
+pub mod register;
 
 #[cfg(test)]
 mod utils {
