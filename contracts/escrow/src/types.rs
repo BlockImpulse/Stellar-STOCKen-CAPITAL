@@ -95,6 +95,12 @@ pub struct SignatureTxEscrow {
      * It is an UUID (36 bytes length), for example: '6f6c974e-2910-11e4-b3d4-0aa7697eb409'
      */
     pub id: String,
+
+    /**
+     * The related propose to this transaction escrow
+     */
+    pub propose_id: String,
+
     /**
      *
      */
