@@ -12,7 +12,6 @@ use soroban_sdk::{
 #[test]
 fn test_init_with_asset() {
     let env = Env::default();
-    // env.mock_all_auths();
 
     let contract_id = env.register_contract(None, EscrowContract);
     let escrow_client = EscrowContractClient::new(&env, &contract_id);
