@@ -1,7 +1,5 @@
 use crate::storage;
-use soroban_sdk::{
-    contracterror, contracttype, Address, Env, IntoVal, String, TryFromVal, Val, U256,
-};
+use soroban_sdk::{contracterror, contracttype, Address, Env, IntoVal, String, TryFromVal, Val};
 
 #[contracttype]
 pub enum DataKey {
@@ -86,7 +84,7 @@ pub struct EscrowProposal {
     /**
      * The minimun funds asked by the proposal
      */
-    pub min_funds: U256,
+    pub min_funds: i128,
 }
 
 #[contracttype]
@@ -112,7 +110,7 @@ pub struct SignatureTxEscrow {
     /**
      * Funds that the seller provide to the propose
      */
-    pub funds: U256,
+    pub funds: i128,
 }
 
 #[contracterror]
