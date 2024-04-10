@@ -4,7 +4,7 @@ use crate::{EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
-    Address, Env, IntoVal, String, U256,
+    Address, Env, IntoVal, String,
 };
 
 // keccak256(STOCKEN_ID_1)
@@ -25,7 +25,7 @@ fn test_add_proposal() {
 
     let stocken_id = String::from_str(&env, STOCKEN_ID_1);
     let proposer_address = Address::generate(&env);
-    let amount_asked = U256::from_u32(&env, 900000u32);
+    let amount_asked: i128 = 900000;
 
     escrow_client.add_proposal(&stocken_id, &proposer_address, &amount_asked);
 
@@ -62,11 +62,11 @@ fn test_add_multiple_proposal() {
     // Data for proposals
     let stocken_id_1 = String::from_str(&env, STOCKEN_ID_1);
     let proposer_address_1 = Address::generate(&env);
-    let amount_asked_1 = U256::from_u32(&env, 900000u32);
+    let amount_asked_1: i128 = 900000;
 
     let stocken_id_2 = String::from_str(&env, STOCKEN_ID_2);
     let proposer_address_2 = Address::generate(&env);
-    let amount_asked_2 = U256::from_u32(&env, 1800000u32);
+    let amount_asked_2: i128 = 1800000;
 
     escrow_client.add_proposal(&stocken_id_1, &proposer_address_1, &amount_asked_1);
     escrow_client.add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
