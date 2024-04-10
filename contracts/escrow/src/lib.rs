@@ -8,20 +8,26 @@ use storage::Storage;
 use types::{DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureTxEscrow};
 
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, symbol_short, Address, Env, String, U256,
+    contract, contractimpl, panic_with_error, symbol_short, token, Address, Env, String,
 };
+
+fn check_initialization(env: &Env) {
+    if !DataKey::AssetAddress.has(env) || !DataKey::OracleAddress.has(env) {
+        panic_with_error!(env, EscrowError::NotInit);
+    }
+}
+
+fn transfer_funds(env: &Env, from: &Address, to: &Address, amount: &i128) {
+    let asset_address: &Address = &DataKey::AssetAddress.get(env).unwrap();
+    let client = token::Client::new(env, asset_address);
+    client.transfer(from, to, amount);
+}
 
 #[contract]
 pub struct EscrowContract;
 
 #[contractimpl]
 impl EscrowContract {
-    fn check_initialization(env: &Env) {
-        if !DataKey::AssetAddress.has(env) || !DataKey::OracleAddress.has(env) {
-            panic_with_error!(env, EscrowError::NotInit);
-        }
-    }
-
     pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
         DataKey::AssetAddress.set(&env, &asset_address);
         DataKey::OracleAddress.set(&env, &oracle_address);
@@ -37,9 +43,9 @@ impl EscrowContract {
         env: Env,
         stocken_proposal_id: String,
         proposer_address: Address,
-        min_funds: U256,
+        min_funds: i128,
     ) {
-        Self::check_initialization(&env);
+        check_initialization(&env);
 
         if DataKey::Proposal(stocken_proposal_id.clone()).has(&env) {
             panic_with_error!(&env, EscrowError::AlreadyProposed);
@@ -73,8 +79,8 @@ impl EscrowContract {
     the same UUID but with some hex values with a uppercase or lowercase, it
     will lead to the contract to identify it as two diff Ids.
     */
-    pub fn register_escrow(env: Env, signaturit_id: String, sender_id: Address, funds: U256) {
-        Self::check_initialization(&env);
+    pub fn register_escrow(env: Env, signaturit_id: String, sender_id: Address, funds: i128) {
+        check_initialization(&env);
 
         let propose: EscrowProposal = Self::get_proposal(&env, signaturit_id.clone());
 
@@ -87,8 +93,9 @@ impl EscrowContract {
         }
 
         // Require auth of the sender to lock the funds
+        // Call this at end?? before emit the event
         sender_id.require_auth();
-        // TODO: Move the funds to the contract
+        transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
         // Move the funds to here
 
