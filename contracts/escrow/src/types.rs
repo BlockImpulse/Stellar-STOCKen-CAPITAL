@@ -128,8 +128,9 @@ pub enum EscrowError {
     OnlyOracle = 2,
     AlreadyProposed = 3,
     ProposalNotFound = 4,
-    PickedOrCanceled = 5,
-    NoEnoughtFunds = 6,
+    SignatureProcessNotFound = 5,
+    PickedOrCanceled = 6,
+    NoEnoughtFunds = 7,
 }
 
 #[contracttype]
@@ -139,6 +140,7 @@ pub enum ProposalStatus {
     Canceled = 0,
     Actived = 1,
     Picked = 2,
+    Completed = 3,
 }
 
 #[contracttype]
