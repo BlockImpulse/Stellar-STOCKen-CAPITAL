@@ -3,9 +3,11 @@ mod events;
 mod storage;
 mod types;
 
-use events::{INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC};
+use events::{INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SUCCESS_SIGN_TOPIC};
 use storage::Storage;
-use types::{DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureTxEscrow};
+use types::{
+    DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureStatus, SignatureTxEscrow,
+};
 
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, symbol_short, token, Address, Env, String,
@@ -17,10 +19,34 @@ fn check_initialization(env: &Env) {
     }
 }
 
+fn only_oracle(env: &Env, caller_address: Address) {
+    let oracle_address: Address = DataKey::OracleAddress.get(env).unwrap();
+
+    if !caller_address.eq(&oracle_address) {
+        panic_with_error!(env, EscrowError::OnlyOracle);
+    }
+}
+
 fn transfer_funds(env: &Env, from: &Address, to: &Address, amount: &i128) {
     let asset_address: &Address = &DataKey::AssetAddress.get(env).unwrap();
     let client = token::Client::new(env, asset_address);
     client.transfer(from, to, amount);
+}
+
+fn get_proposal(env: &Env, escrow_id: String) -> EscrowProposal {
+    if !DataKey::Proposal(escrow_id.clone()).has(&env) {
+        panic_with_error!(&env, EscrowError::ProposalNotFound);
+    }
+
+    DataKey::Proposal(escrow_id).get(env).unwrap()
+}
+
+fn get_signature_tx_escrow(env: &Env, signaturit_id: String) -> SignatureTxEscrow {
+    if !DataKey::SignatureProcess(signaturit_id.clone()).has(&env) {
+        panic_with_error!(&env, EscrowError::SignatureProcessNotFound);
+    }
+
+    DataKey::SignatureProcess(signaturit_id).get(&env).unwrap()
 }
 
 #[contract]
@@ -65,14 +91,6 @@ impl EscrowContract {
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
     }
 
-    pub fn get_proposal(env: &Env, escrow_id: String) -> EscrowProposal {
-        if !DataKey::Proposal(escrow_id.clone()).has(&env) {
-            panic_with_error!(&env, EscrowError::ProposalNotFound);
-        }
-
-        DataKey::Proposal(escrow_id).get(env).unwrap()
-    }
-
     /*
     TODO: The `signaturit_id` is expected to be an UUID String. This need more
     testing and work since String is case sensitive. Two string that represent
@@ -88,7 +106,7 @@ impl EscrowContract {
     ) {
         check_initialization(&env);
 
-        let mut propose: EscrowProposal = Self::get_proposal(&env, proposal_id.clone());
+        let mut propose: EscrowProposal = get_proposal(&env, proposal_id.clone());
 
         if propose.status != ProposalStatus::Actived {
             panic_with_error!(&env, EscrowError::PickedOrCanceled);
@@ -115,6 +133,7 @@ impl EscrowContract {
             buyer: sender_id,
             receiver: propose.owner.clone(),
             funds,
+            status: SignatureStatus::Progress,
         };
 
         env.events()
@@ -130,6 +149,37 @@ impl EscrowContract {
         propose.status = ProposalStatus::Picked;
         DataKey::Proposal(proposal_id).set(&env, &propose);
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
+    }
+
+    pub fn success_signature(env: Env, caller_address: Address, signaturit_id: String) {
+        // TODO: Ask for this. Only the Oracle can call this function
+        // Idk the correc to do this here since we have require_auth()
+        caller_address.require_auth();
+        // OracleADdress.require_auth();
+
+        // Only oracle can call
+        only_oracle(&env, caller_address);
+
+        let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
+
+        let mut propose = get_proposal(&env, signature_process.propose_id);
+
+        // Release the funds to the owner of the propose
+        transfer_funds(
+            &env,
+            &env.current_contract_address(), // from
+            &signature_process.receiver,     // to
+            &signature_process.funds,        // amount
+        );
+
+        signature_process.status = SignatureStatus::Completed;
+        propose.status = ProposalStatus::Completed;
+
+        // TODO: Mint the NFT with the signature ID and the propose ID
+        env.events().publish(
+            (SUCCESS_SIGN_TOPIC, symbol_short!("Completed")),
+            (signaturit_id, propose.escrow_id),
+        );
     }
 }
 
