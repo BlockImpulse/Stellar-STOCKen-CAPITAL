@@ -108,11 +108,7 @@ impl EscrowContract {
             panic_with_error!(&env, EscrowError::NoEnoughtFunds);
         }
 
-        // Require auth of the sender to lock the funds
-        // TODO: Check if this is require auth is necessary, since it's a
-        // transfer and not the register escrow call
         sender_id.require_auth();
-        // Move the funds to here
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
         // TODO: Call the Oracle and get the oracle id to identify the tx escrow
