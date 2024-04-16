@@ -16,6 +16,26 @@ pub const REGISTER_TOPIC: Symbol = symbol_short!("Register");
 pub const INIT_TOPIC: Symbol = symbol_short!("INIT");
 
 /**
- * Signed successed event
+ * Signed topic symbol
  */
-pub const SUCCESS_SIGN_TOPIC: Symbol = symbol_short!("SIGNED");
+pub const SIGNED_TOPIC: Symbol = symbol_short!("SIGNED");
+
+/**
+ * Completed topic symbol
+ */
+pub const COMPLETED_TOPIC: Symbol = symbol_short!("COMPLETED");
+
+/**
+ * Failed topic symbol
+ */
+pub const FAILED_TOPIC: Symbol = symbol_short!("FAILED");
+
+/**
+ * Signature process completed topic
+ */
+pub const SIGNED_COMPLETED_TOPIC: (Symbol, Symbol) = (SIGNED_TOPIC, COMPLETED_TOPIC);
+
+/**
+ * Signature process failed topic
+ */
+pub const SIGNED_FAILED_TOPIC: (Symbol, Symbol) = (SIGNED_TOPIC, FAILED_TOPIC);
