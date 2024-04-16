@@ -6,7 +6,7 @@ use std::string::ToString;
 use crate::{
     events::REGISTER_TOPIC,
     test::utils::{create_token_contract, STOCKEN_ID_1},
-    types::SignatureTxEscrow,
+    types::{SignatureStatus, SignatureTxEscrow},
     EscrowContract, EscrowContractClient,
 };
 
@@ -61,6 +61,7 @@ fn test_new_register() {
         buyer: picker_address,
         receiver: proposer_address,
         funds: amount_to_give,
+        status: SignatureStatus::Progress,
     };
 
     let event_expected: (Address, Vec<Val>, Val) = (
