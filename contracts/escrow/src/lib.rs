@@ -54,6 +54,7 @@ pub struct EscrowContract;
 #[contractimpl]
 impl EscrowContract {
     pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
+        // TODO: Check initialization of. Cannot reinitilize
         DataKey::AssetAddress.set(&env, &asset_address);
         DataKey::OracleAddress.set(&env, &oracle_address);
 
