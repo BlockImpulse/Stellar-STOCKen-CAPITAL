@@ -1,13 +1,25 @@
 #![cfg(test)]
 
+extern crate std;
+
 use crate::events::INIT_TOPIC;
 use crate::test::utils::{create_token_contract, native_asset_contract_address};
 
 use crate::{EscrowContract, EscrowContractClient};
 use soroban_sdk::{
-    testutils::{Address as AddressTestTrait, Events},
+    testutils::{Address as AddressTestTrait, Events, MockAuth, MockAuthInvoke},
     Address, Env, IntoVal,
 };
+
+// env.mock_auths(&[MockAuth {
+//     address: &caller0_address,
+//     invoke: &MockAuthInvoke {
+//         contract: &escrow_client.address,
+//         fn_name: "check_auth",
+//         args: (&caller0_address,).into_val(&env),
+//         sub_invokes: &[],
+//     },
+// }]);
 
 #[test]
 fn test_init_with_asset() {

@@ -2,6 +2,7 @@
 
 use crate::{
     test::utils::{STOCKEN_ID_1, STOCKEN_ID_2},
+    types::NullableString,
     EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus,
 };
 use soroban_sdk::{
@@ -32,6 +33,7 @@ fn test_add_proposal() {
         owner: proposer_address,
         status: ProposalStatus::Actived,
         min_funds: amount_asked,
+        signature_tx_linked: NullableString::None,
     };
 
     let event_expected = (
@@ -74,6 +76,7 @@ fn test_add_multiple_proposal() {
         owner: proposer_address_1,
         status: ProposalStatus::Actived,
         min_funds: amount_asked_1,
+        signature_tx_linked: NullableString::None,
     };
 
     let expected_proposal_2 = EscrowProposal {
@@ -81,6 +84,7 @@ fn test_add_multiple_proposal() {
         owner: proposer_address_2,
         status: ProposalStatus::Actived,
         min_funds: amount_asked_2,
+        signature_tx_linked: NullableString::None,
     };
 
     let event_expected_1 = (
