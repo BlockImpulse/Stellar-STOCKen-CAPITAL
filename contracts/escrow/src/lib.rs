@@ -91,12 +91,6 @@ impl EscrowContract {
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
     }
 
-    /*
-    TODO: The `signaturit_id` is expected to be an UUID String. This need more
-    testing and work since String is case sensitive. Two string that represent
-    the same UUID but with some hex values with a uppercase or lowercase, it
-    will lead to the contract to identify it as two diff Ids.
-    */
     pub fn register_escrow(
         env: Env,
         proposal_id: String,
@@ -123,6 +117,7 @@ impl EscrowContract {
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
         // TODO: Call the Oracle and get the oracle id to identify the tx escrow
+        // It will fail if the signaturit id is already picked
         // let oracle_id = oracle.register_new_sign(signaturit_id);
         let oracle_id = 0u32;
 
@@ -139,12 +134,6 @@ impl EscrowContract {
         env.events()
             .publish((REGISTER_TOPIC, symbol_short!("New")), tx_register.clone());
 
-        // TODO: Change the status to picked to avoid multiple picks to single propose.
-        // Maybe we can do some kind of record for each time of a `proposal_id` is picked
-        // Then the oracle callback will cancel all the signatures process.
-        // But this means that the event reader have to make the API call to signaturit
-        // and I don't know if it's ok.
-        //
         // This way, the propose can be picked just once per time
         propose.status = ProposalStatus::Picked;
         DataKey::Proposal(proposal_id).set(&env, &propose);
@@ -152,9 +141,11 @@ impl EscrowContract {
     }
 
     pub fn success_signature(env: Env, caller_address: Address, signaturit_id: String) {
-        // TODO: Ask for this. Only the Oracle can call this function
+        // TODO: Only the Oracle can call this function
         // Idk the correc to do this here since we have require_auth()
+        // When the register is made, the contract should grant auth to the Oracle address
         caller_address.require_auth();
+
         // OracleADdress.require_auth();
 
         // Only oracle can call

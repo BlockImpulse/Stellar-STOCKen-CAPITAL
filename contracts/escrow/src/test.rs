@@ -26,7 +26,6 @@ mod utils {
         )
     }
 
-    // TODO: Ask for this, the previous way didn't work
     pub fn native_asset_contract_address(e: &Env) -> Address {
         // CDF3YSDVBXV3QU2QSOZ55L4IVR7UZ74HIJKXNJMN4K5MOVFM3NDBNMLY
         let str_address = String::from_str(
