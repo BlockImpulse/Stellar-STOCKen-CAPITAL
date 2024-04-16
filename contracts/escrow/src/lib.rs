@@ -13,7 +13,9 @@ use types::{
 };
 
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, symbol_short, token, Address, Env, String,
+    auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
+    contract, contractimpl, panic_with_error, symbol_short, token, vec, Address, Env, IntoVal,
+    String, Symbol,
 };
 
 fn check_initialization(env: &Env) {
@@ -114,9 +116,21 @@ impl EscrowContract {
         sender_id.require_auth();
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
+        env.authorize_as_current_contract(vec![
+            &env,
+            InvokerContractAuthEntry::Contract(SubContractInvocation {
+                context: ContractContext {
+                    contract: get_oracle(&env),
+                    fn_name: Symbol::new(&env, "register_new_signature_process"),
+                    args: (env.current_contract_address(), signaturit_id.clone()).into_val(&env),
+                },
+                sub_invocations: vec![&env],
+            }),
+        ]);
+
         // TODO: Call the Oracle and get the oracle id to identify the tx escrow
         // It will fail if the signaturit id is already picked
-        // let oracle_id = oracle.register_new_sign(signaturit_id);
+        // let oracle_id = oracle.register_new_signature_process(env.current_contract_address(), signaturit_id.clone());
         let oracle_id = 0u32;
 
         let tx_register = SignatureTxEscrow {
