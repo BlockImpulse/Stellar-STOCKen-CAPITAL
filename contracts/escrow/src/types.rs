@@ -91,7 +91,7 @@ pub struct EscrowProposal {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SignatureTxEscrow {
     /**
-     * The transaction escrow ID is the signature ID from Signaturit.
+     * The transaction escrow ID is the signature ID (uuid) from Signaturit.
      * It is an UUID (36 bytes length), for example: '6f6c974e-2910-11e4-b3d4-0aa7697eb409'
      */
     pub id: String,
@@ -102,7 +102,7 @@ pub struct SignatureTxEscrow {
     pub propose_id: String,
 
     /**
-     *
+     * The identifier to find this signature process on the Signaturit Oracle
      */
     pub oracle_id: u32,
     /**
@@ -117,6 +117,10 @@ pub struct SignatureTxEscrow {
      * Funds that the seller provide to the propose
      */
     pub funds: i128,
+    /**
+     * Current stauts of the signature
+     */
+    pub status: SignatureStatus,
 }
 
 #[contracterror]
@@ -148,6 +152,6 @@ pub enum ProposalStatus {
 #[repr(u32)]
 pub enum SignatureStatus {
     Canceled = 0,
-    Actived = 1,
-    Picked = 2,
+    Completed = 1,
+    Progress = 2,
 }
