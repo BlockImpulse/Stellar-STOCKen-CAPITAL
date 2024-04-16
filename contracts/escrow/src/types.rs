@@ -89,6 +89,16 @@ pub struct EscrowProposal {
      * The minimun funds asked by the proposal
      */
     pub min_funds: i128,
+    // TODO: Add a nulleable string to see if has a signature tx process linked
+    // to it. Ex:
+    // enum NullableString {
+    //     Some(String),
+    //     None,
+    // }
+
+    // struct MyStruct {
+    //     my_field: NullableString,
+    // }
 }
 
 #[contracttype]
