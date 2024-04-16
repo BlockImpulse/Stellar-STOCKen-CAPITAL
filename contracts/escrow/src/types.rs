@@ -12,28 +12,30 @@ pub enum DataKey {
 impl storage::Storage for DataKey {
     fn get<V: TryFromVal<Env, Val>>(&self, env: &Env) -> Option<V> {
         match self {
-            DataKey::Proposal(_)
-            | &DataKey::AssetAddress
-            | &DataKey::OracleAddress
-            | DataKey::SignatureProcess(_) => storage::Persistent::get(env, self),
+            DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
+                storage::Persistent::get(env, self)
+            }
+            &DataKey::AssetAddress | &DataKey::OracleAddress => storage::Instance::get(env, self),
         }
     }
 
     fn set<V: IntoVal<Env, Val>>(&self, env: &Env, val: &V) {
         match self {
-            DataKey::Proposal(_)
-            | &DataKey::AssetAddress
-            | &DataKey::OracleAddress
-            | DataKey::SignatureProcess(_) => storage::Persistent::set(env, self, val),
+            DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
+                storage::Persistent::set(env, self, val)
+            }
+            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Instance::set(env, self, val)
+            }
         }
     }
 
     fn has(&self, env: &Env) -> bool {
         match self {
-            DataKey::Proposal(_)
-            | &DataKey::AssetAddress
-            | &DataKey::OracleAddress
-            | DataKey::SignatureProcess(_) => storage::Persistent::has(env, self),
+            DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
+                storage::Persistent::has(env, self)
+            }
+            &DataKey::AssetAddress | &DataKey::OracleAddress => storage::Instance::has(env, self),
         }
     }
 
@@ -43,11 +45,11 @@ impl storage::Storage for DataKey {
         }
 
         match self {
-            DataKey::Proposal(_)
-            | &DataKey::AssetAddress
-            | &DataKey::OracleAddress
-            | DataKey::SignatureProcess(_) => {
+            DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::extend(env, self, min_ledger_to_live)
+            }
+            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Instance::extend(env, min_ledger_to_live);
             }
         };
         self
@@ -55,10 +57,12 @@ impl storage::Storage for DataKey {
 
     fn remove(&self, env: &Env) {
         match self {
-            DataKey::Proposal(_)
-            | &DataKey::AssetAddress
-            | &DataKey::OracleAddress
-            | DataKey::SignatureProcess(_) => storage::Persistent::remove(env, self),
+            DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
+                storage::Persistent::remove(env, self)
+            }
+            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+                storage::Instance::remove(env, self)
+            }
         }
     }
 }
