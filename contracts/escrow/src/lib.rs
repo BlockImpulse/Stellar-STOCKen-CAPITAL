@@ -3,7 +3,9 @@ mod events;
 mod storage;
 mod types;
 
-use events::{INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SUCCESS_SIGN_TOPIC};
+use events::{
+    INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC, SIGNED_FAILED_TOPIC,
+};
 use storage::Storage;
 use types::{
     DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureStatus, SignatureTxEscrow,
@@ -19,12 +21,8 @@ fn check_initialization(env: &Env) {
     }
 }
 
-fn only_oracle(env: &Env, caller_address: Address) {
-    let oracle_address: Address = DataKey::OracleAddress.get(env).unwrap();
-
-    if !caller_address.eq(&oracle_address) {
-        panic_with_error!(env, EscrowError::OnlyOracle);
-    }
+fn get_oracle(env: &Env) -> Address {
+    DataKey::OracleAddress.get(env).unwrap()
 }
 
 fn transfer_funds(env: &Env, from: &Address, to: &Address, amount: &i128) {
@@ -111,9 +109,10 @@ impl EscrowContract {
         }
 
         // Require auth of the sender to lock the funds
-        // Move the funds to here
-        // Call this at end?? before emit the event
+        // TODO: Check if this is require auth is necessary, since it's a
+        // transfer and not the register escrow call
         sender_id.require_auth();
+        // Move the funds to here
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
         // TODO: Call the Oracle and get the oracle id to identify the tx escrow
@@ -140,16 +139,8 @@ impl EscrowContract {
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
     }
 
-    pub fn success_signature(env: Env, caller_address: Address, signaturit_id: String) {
-        // TODO: Only the Oracle can call this function
-        // Idk the correc to do this here since we have require_auth()
-        // When the register is made, the contract should grant auth to the Oracle address
-        caller_address.require_auth();
-
-        // OracleADdress.require_auth();
-
-        // Only oracle can call
-        only_oracle(&env, caller_address);
+    pub fn completed_signature(env: Env, signaturit_id: String) {
+        get_oracle(&env).require_auth();
 
         let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
 
@@ -167,9 +158,34 @@ impl EscrowContract {
         propose.status = ProposalStatus::Completed;
 
         // TODO: Mint the NFT with the signature ID and the propose ID
+        env.events()
+            .publish(SIGNED_COMPLETED_TOPIC, (signaturit_id, propose.escrow_id));
+    }
+
+    pub fn failed_signature(env: Env, signaturit_id: String) {
+        get_oracle(&env).require_auth();
+
+        // Only oracle can call
+        // only_oracle(&env, caller_address);
+
+        let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
+
+        let mut propose = get_proposal(&env, signature_process.propose_id);
+
+        // Return the funds to the address that picked the propose
+        transfer_funds(
+            &env,
+            &env.current_contract_address(), // from
+            &signature_process.buyer,        // to
+            &signature_process.funds,        // amount
+        );
+
+        signature_process.status = SignatureStatus::Canceled;
+        propose.status = ProposalStatus::Actived;
+
         env.events().publish(
-            (SUCCESS_SIGN_TOPIC, symbol_short!("Completed")),
-            (signaturit_id, propose.escrow_id),
+            SIGNED_FAILED_TOPIC,
+            (signature_process.id, propose.escrow_id),
         );
     }
 }
