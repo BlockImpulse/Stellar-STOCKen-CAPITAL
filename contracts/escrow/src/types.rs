@@ -69,6 +69,13 @@ impl storage::Storage for DataKey {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum NullableString {
+    Some(String),
+    None,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EscrowProposal {
     /**
     Proposal ID from stocken, so can know what is the propose
@@ -89,16 +96,11 @@ pub struct EscrowProposal {
      * The minimun funds asked by the proposal
      */
     pub min_funds: i128,
-    // TODO: Add a nulleable string to see if has a signature tx process linked
-    // to it. Ex:
-    // enum NullableString {
-    //     Some(String),
-    //     None,
-    // }
 
-    // struct MyStruct {
-    //     my_field: NullableString,
-    // }
+    /**
+     * The current signature transaction process linked to this propsal
+     */
+    pub signature_tx_linked: NullableString,
 }
 
 #[contracttype]

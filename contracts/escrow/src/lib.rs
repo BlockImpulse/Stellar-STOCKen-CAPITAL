@@ -8,7 +8,8 @@ use events::{
 };
 use storage::Storage;
 use types::{
-    DataKey, EscrowError, EscrowProposal, ProposalStatus, SignatureStatus, SignatureTxEscrow,
+    DataKey, EscrowError, EscrowProposal, NullableString, ProposalStatus, SignatureStatus,
+    SignatureTxEscrow,
 };
 
 use soroban_sdk::{
@@ -80,6 +81,7 @@ impl EscrowContract {
             owner: proposer_address,
             status: ProposalStatus::Actived,
             min_funds,
+            signature_tx_linked: NullableString::None,
         };
 
         env.events()
@@ -131,6 +133,7 @@ impl EscrowContract {
 
         // This way, the propose can be picked just once per time
         propose.status = ProposalStatus::Picked;
+        propose.signature_tx_linked = NullableString::Some(signaturit_id.clone());
         DataKey::Proposal(proposal_id).set(&env, &propose);
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
     }
@@ -178,6 +181,7 @@ impl EscrowContract {
 
         signature_process.status = SignatureStatus::Canceled;
         propose.status = ProposalStatus::Actived;
+        propose.signature_tx_linked = NullableString::None;
 
         env.events().publish(
             SIGNED_FAILED_TOPIC,
