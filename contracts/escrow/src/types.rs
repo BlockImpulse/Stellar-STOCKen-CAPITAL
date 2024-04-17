@@ -151,6 +151,7 @@ pub enum EscrowError {
     SignatureProcessNotFound = 5,
     PickedOrCanceled = 6,
     NoEnoughtFunds = 7,
+    AlreadyInitialized = 8,
 }
 
 #[contracttype]
