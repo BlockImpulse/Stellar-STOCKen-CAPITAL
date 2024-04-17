@@ -4,7 +4,8 @@ mod storage;
 mod types;
 
 use events::{
-    INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC, SIGNED_FAILED_TOPIC,
+    ADDED_TOPIC, INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC,
+    SIGNED_FAILED_TOPIC,
 };
 use storage::Storage;
 use types::{
@@ -105,7 +106,7 @@ impl EscrowContract {
         };
 
         env.events()
-            .publish((PROPOSAL_TOPIC, symbol_short!("Added")), propose.clone());
+            .publish((PROPOSAL_TOPIC, ADDED_TOPIC), propose.clone());
 
         // Save the proposal
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
