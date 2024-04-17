@@ -433,3 +433,5 @@ fn new_register() {
         "register escrow event not present"
     );
 }
+
+// TODO: Multiple register to check the oracle id
