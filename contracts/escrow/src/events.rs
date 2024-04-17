@@ -1,27 +1,27 @@
 use soroban_sdk::{symbol_short, Symbol};
 
 /**
- * Proposal
+ * Proposal topic
  */
-pub const PROPOSAL_TOPIC: Symbol = symbol_short!("Proposal");
+pub const PROPOSAL_TOPIC: Symbol = symbol_short!("PROPOSAL");
 
 /**
- * Register
+ * Register topic
  */
-pub const REGISTER_TOPIC: Symbol = symbol_short!("Register");
+pub const REGISTER_TOPIC: Symbol = symbol_short!("REGISTER");
 
 /**
- * Initialization event
+ * Initialization topic
  */
-pub const INIT_TOPIC: Symbol = symbol_short!("INIT");
+pub const INITIALIZED_TOPIC: Symbol = symbol_short!("INITIALZD");
 
 /**
- * Signed topic symbol
+ * Signed topic
  */
 pub const SIGNED_TOPIC: Symbol = symbol_short!("SIGNED");
 
 /**
- * Completed topic symbol
+ * Completed topic
  */
 pub const COMPLETED_TOPIC: Symbol = symbol_short!("COMPLETED");
 
