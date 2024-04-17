@@ -5,18 +5,33 @@ use std::string::ToString;
 
 use crate::{
     events::REGISTER_TOPIC,
-    test::utils::{create_token_contract, STOCKEN_ID_1},
     types::{SignatureStatus, SignatureTxEscrow},
     EscrowContract, EscrowContractClient,
 };
 
+use soroban_sdk::token;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
     Address, Env, IntoVal, String, Val, Vec,
 };
+use token::Client as TokenClient;
+use token::StellarAssetClient;
 
 use uuid::Uuid;
+
+// keccak256(STOCKEN_ID_1)
+const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
+fn create_token_contract<'a>(
+    e: &Env,
+    admin: &Address,
+) -> (TokenClient<'a>, StellarAssetClient<'a>) {
+    let contract_address = e.register_stellar_asset_contract(admin.clone());
+    (
+        TokenClient::new(e, &contract_address),
+        StellarAssetClient::new(e, &contract_address),
+    )
+}
 
 #[test]
 fn test_new_register() {
@@ -29,6 +44,7 @@ fn test_new_register() {
     // Init the escrow
     let admin_address = Address::generate(&env);
     let (asset, asset_admin) = create_token_contract(&env, &admin_address);
+
     let mock_oracle_address = Address::generate(&env);
     escrow_client.initialize(&asset.address, &mock_oracle_address);
 
