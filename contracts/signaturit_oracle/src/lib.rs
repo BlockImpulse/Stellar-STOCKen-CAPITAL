@@ -24,10 +24,10 @@ fn get_admin(env: &Env) -> Address {
 }
 
 #[contract]
-pub struct SignaturitOracleContract;
+pub struct SignaturitOracle;
 
 #[contractimpl]
-impl SignaturitOracleContract {
+impl SignaturitOracle {
     /**
     Initialize the contract with the given arguments, making the oracle ready
     to be used.
