@@ -16,6 +16,11 @@ pub const ADDED_TOPIC: Symbol = symbol_short!("ADDED");
 pub const REGISTER_TOPIC: Symbol = symbol_short!("REGISTER");
 
 /**
+ * Escrow topic
+ */
+pub const ESCROW_TOPIC: Symbol = symbol_short!("ESCROW");
+
+/**
  * Initialization topic
  */
 pub const INITIALIZED_TOPIC: Symbol = symbol_short!("INITIALZD");
@@ -34,6 +39,11 @@ pub const COMPLETED_TOPIC: Symbol = symbol_short!("COMPLETED");
  * Failed topic symbol
  */
 pub const FAILED_TOPIC: Symbol = symbol_short!("FAILED");
+
+/**
+ * New escrow register topic
+ */
+pub const REGISTER_ESCROW: (Symbol, Symbol) = (REGISTER_TOPIC, ESCROW_TOPIC);
 
 /**
  * Signature process completed topic
