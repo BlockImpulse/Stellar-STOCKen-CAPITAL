@@ -55,8 +55,8 @@ impl SignaturitOracle {
     signature process.
     */
     pub fn register_new_signature_process(env: Env, caller: Address, signaturit_id: String) -> u32 {
-        caller.require_auth();
         check_initialization(&env);
+        caller.require_auth();
 
         let oracle_id = DataKey::RegisterCounter.get(&env).unwrap_or(0);
 
@@ -83,6 +83,7 @@ impl SignaturitOracle {
     }
 
     pub fn signature_response(env: Env, oracle_id: u32, is_success: bool) {
+        check_initialization(&env);
         get_admin(&env).require_auth();
 
         let signature_process: SignaturitProcess = DataKey::SignaturitProcess(oracle_id.clone())
