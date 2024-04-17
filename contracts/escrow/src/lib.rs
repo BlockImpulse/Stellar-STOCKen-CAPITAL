@@ -4,7 +4,7 @@ mod storage;
 mod types;
 
 use events::{
-    INIT_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC, SIGNED_FAILED_TOPIC,
+    INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC, SIGNED_FAILED_TOPIC,
 };
 use storage::Storage;
 use types::{
@@ -61,7 +61,7 @@ impl EscrowContract {
         DataKey::OracleAddress.set(&env, &oracle_address);
 
         env.events()
-            .publish((INIT_TOPIC,), (asset_address, oracle_address));
+            .publish((INITIALIZED_TOPIC,), (asset_address, oracle_address));
     }
 
     /**
