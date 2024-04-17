@@ -28,9 +28,13 @@ fn get_oracle(env: &Env) -> Address {
     DataKey::OracleAddress.get(env).unwrap()
 }
 
+fn get_asset(env: &Env) -> Address {
+    DataKey::AssetAddress.get(env).unwrap()
+}
+
 fn transfer_funds(env: &Env, from: &Address, to: &Address, amount: &i128) {
-    let asset_address: &Address = &DataKey::AssetAddress.get(env).unwrap();
-    let client = token::Client::new(env, asset_address);
+    let asset_address = get_asset(env);
+    let client = token::Client::new(env, &asset_address);
     client.transfer(from, to, amount);
 }
 
@@ -55,8 +59,21 @@ pub struct EscrowContract;
 
 #[contractimpl]
 impl EscrowContract {
+    pub fn get_oracle(env: Env) -> Address {
+        check_initialization(&env);
+        return get_oracle(&env);
+    }
+
+    pub fn get_asset(env: Env) -> Address {
+        check_initialization(&env);
+        return get_asset(&env);
+    }
+
     pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
-        // TODO: Check initialization of. Cannot reinitilize
+        if DataKey::AssetAddress.has(&env) || DataKey::OracleAddress.has(&env) {
+            panic_with_error!(env, EscrowError::AlreadyInitialized);
+        }
+
         DataKey::AssetAddress.set(&env, &asset_address);
         DataKey::OracleAddress.set(&env, &oracle_address);
 
@@ -154,6 +171,7 @@ impl EscrowContract {
     }
 
     pub fn completed_signature(env: Env, signaturit_id: String) {
+        check_initialization(&env);
         get_oracle(&env).require_auth();
 
         let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
@@ -177,6 +195,7 @@ impl EscrowContract {
     }
 
     pub fn failed_signature(env: Env, signaturit_id: String) {
+        check_initialization(&env);
         get_oracle(&env).require_auth();
 
         // Only oracle can call
