@@ -26,6 +26,45 @@ fn add_proposal_not_initialized() {
 }
 
 #[test]
+fn add_proposal_already_proposed() {
+    let test = EscrowTest::setup();
+
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    let expected_proposal = EscrowProposal {
+        escrow_id: stocken_id.clone(),
+        owner: test.alice.clone(),
+        status: ProposalStatus::Actived,
+        min_funds: amount_asked,
+        signature_tx_linked: NullableString::None,
+    };
+
+    let event_expected = (
+        test.escrow.address.clone(),
+        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
+        expected_proposal.into_val(&test.env),
+    );
+
+    assert!(
+        test.env.events().all().contains(event_expected),
+        "added proposal event not present"
+    );
+
+    let same_stocken_id = stocken_id;
+    let amount_asked_2: i128 = 25_000_000_000_000_000_000; // 25 tokens
+
+    let res = test
+        .escrow
+        .try_add_proposal(&same_stocken_id, &test.alice, &amount_asked_2);
+
+    assert_eq!(res, Err(Ok(EscrowError::AlreadyProposed.into())));
+}
+
+#[test]
 fn add_proposal() {
     let test = EscrowTest::setup();
 
