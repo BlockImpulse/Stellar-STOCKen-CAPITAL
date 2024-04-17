@@ -6,6 +6,11 @@ use soroban_sdk::{symbol_short, Symbol};
 pub const PROPOSAL_TOPIC: Symbol = symbol_short!("PROPOSAL");
 
 /**
+ * Added topic
+ */
+pub const ADDED_TOPIC: Symbol = symbol_short!("ADDED");
+
+/**
  * Register topic
  */
 pub const REGISTER_TOPIC: Symbol = symbol_short!("REGISTER");
