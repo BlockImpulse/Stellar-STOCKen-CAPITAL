@@ -2,21 +2,24 @@
 mod events;
 mod storage;
 mod types;
-
+pub mod oracle {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/signaturit_oracle.wasm"
+    );
+    pub type OracleClient<'a> = Client<'a>;
+}
 use events::{
-    ADDED_TOPIC, INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_TOPIC, SIGNED_COMPLETED_TOPIC,
+    ADDED_TOPIC, INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_ESCROW, SIGNED_COMPLETED_TOPIC,
     SIGNED_FAILED_TOPIC,
+};
+use soroban_sdk::{
+    auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
+    contract, contractimpl, panic_with_error, token, vec, Address, Env, IntoVal, String, Symbol,
 };
 use storage::Storage;
 use types::{
     DataKey, EscrowError, EscrowProposal, NullableString, ProposalStatus, SignatureStatus,
     SignatureTxEscrow,
-};
-
-use soroban_sdk::{
-    auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
-    contract, contractimpl, panic_with_error, symbol_short, token, vec, Address, Env, IntoVal,
-    String, Symbol,
 };
 
 fn check_initialization(env: &Env) {
@@ -123,6 +126,10 @@ impl EscrowContract {
 
         let mut propose: EscrowProposal = get_proposal(&env, proposal_id.clone());
 
+        if DataKey::SignatureProcess(signaturit_id.clone()).has(&env) {
+            panic_with_error!(&env, EscrowError::SignatureProcessExist);
+        }
+
         if propose.status != ProposalStatus::Actived {
             panic_with_error!(&env, EscrowError::PickedOrCanceled);
         }
@@ -131,9 +138,12 @@ impl EscrowContract {
             panic_with_error!(&env, EscrowError::NoEnoughtFunds);
         }
 
-        sender_id.require_auth();
         transfer_funds(&env, &sender_id, &env.current_contract_address(), &funds);
 
+        // Get the oracle client
+        let oracle_client = oracle::OracleClient::new(&env, &get_oracle(&env));
+
+        // Grant auth for calling the function
         env.authorize_as_current_contract(vec![
             &env,
             InvokerContractAuthEntry::Contract(SubContractInvocation {
@@ -146,10 +156,9 @@ impl EscrowContract {
             }),
         ]);
 
-        // TODO: Call the Oracle and get the oracle id to identify the tx escrow
-        // It will fail if the signaturit id is already picked
-        // let oracle_id = oracle.register_new_signature_process(env.current_contract_address(), signaturit_id.clone());
-        let oracle_id = 0u32;
+        // Get the oracle id for this process signature
+        let oracle_id = oracle_client
+            .register_new_signature_process(&env.current_contract_address(), &signaturit_id);
 
         let tx_register = SignatureTxEscrow {
             id: signaturit_id.clone(),
@@ -161,8 +170,7 @@ impl EscrowContract {
             status: SignatureStatus::Progress,
         };
 
-        env.events()
-            .publish((REGISTER_TOPIC, symbol_short!("New")), tx_register.clone());
+        env.events().publish(REGISTER_ESCROW, tx_register.clone());
 
         // This way, the propose can be picked just once per time
         propose.status = ProposalStatus::Picked;
@@ -198,9 +206,6 @@ impl EscrowContract {
     pub fn failed_signature(env: Env, signaturit_id: String) {
         check_initialization(&env);
         get_oracle(&env).require_auth();
-
-        // Only oracle can call
-        // only_oracle(&env, caller_address);
 
         let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
 
