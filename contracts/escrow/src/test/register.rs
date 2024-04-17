@@ -1,93 +1,434 @@
 #![cfg(test)]
 
 extern crate std;
+use core::ops::{Div, Mul};
 use std::string::ToString;
 
 use crate::{
-    events::REGISTER_TOPIC,
+    events::REGISTER_ESCROW,
+    test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
     types::{SignatureStatus, SignatureTxEscrow},
-    EscrowContract, EscrowContractClient,
 };
-
-use soroban_sdk::token;
 use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, Events},
-    Address, Env, IntoVal, String, Val, Vec,
+    testutils::{Events, MockAuth, MockAuthInvoke},
+    IntoVal, String,
 };
-use token::Client as TokenClient;
-use token::StellarAssetClient;
-
 use uuid::Uuid;
 
-// keccak256(STOCKEN_ID_1)
-const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
-fn create_token_contract<'a>(
-    e: &Env,
-    admin: &Address,
-) -> (TokenClient<'a>, StellarAssetClient<'a>) {
-    let contract_address = e.register_stellar_asset_contract(admin.clone());
-    (
-        TokenClient::new(e, &contract_address),
-        StellarAssetClient::new(e, &contract_address),
-    )
-}
-
 #[test]
-fn test_new_register() {
-    let env = Env::default();
-    env.mock_all_auths();
+fn new_register_not_initialized() {
+    let test = EscrowTest::setup_non_init();
 
-    let contract_id = env.register_contract(None, EscrowContract);
-    let escrow_client = EscrowContractClient::new(&env, &contract_id);
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = 20_000_000_000_000_000_000; // 20 tokens
 
-    // Init the escrow
-    let admin_address = Address::generate(&env);
-    let (asset, asset_admin) = create_token_contract(&env, &admin_address);
+    let balance_before_bob = test.token.balance(&test.bob);
 
-    let mock_oracle_address = Address::generate(&env);
-    escrow_client.initialize(&asset.address, &mock_oracle_address);
-
-    // Add a proposal
-    let stocken_id = String::from_str(&env, STOCKEN_ID_1);
-    let proposer_address = Address::generate(&env);
-    let amount_asked: i128 = 900000;
-    escrow_client.add_proposal(&stocken_id, &proposer_address, &amount_asked);
-
-    // Pick a escrow
-    // The sginaturit ID is an UUID
-    let signaturit_id = String::from_str(&env, &Uuid::new_v4().to_string());
-    let picker_address = Address::generate(&env);
-    let amount_to_give: i128 = 1800000;
-
-    // Provide tokens to the picker address
-    asset_admin.mint(&picker_address, &amount_to_give);
-
-    escrow_client.register_escrow(
+    let res = test.escrow.mock_all_auths().try_register_escrow(
         &stocken_id,
         &signaturit_id,
-        &picker_address,
+        &test.bob,
         &amount_to_give,
     );
 
-    let expected_signature_tx = SignatureTxEscrow {
+    assert_eq!(res, Err(Ok(EscrowError::NotInit.into())));
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        0,
+        "escrow contract receive funds incorrectly"
+    );
+}
+
+#[test]
+fn new_register_proposal_not_found() {
+    let test = EscrowTest::setup();
+
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = 20_000_000_000_000_000_000; // 20 tokens
+
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    let res = test.escrow.mock_all_auths().try_register_escrow(
+        &stocken_id,
+        &signaturit_id,
+        &test.bob,
+        &amount_to_give,
+    );
+
+    assert_eq!(res, Err(Ok(EscrowError::ProposalNotFound.into())));
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        0,
+        "escrow contract receive funds incorrectly"
+    );
+}
+
+#[test]
+fn new_register_not_enough_funds() {
+    let test = EscrowTest::setup();
+
+    // Add a proposal
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    // Pick a escrow
+    // The sginaturit ID is an UUID
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = amount_asked.div(2);
+
+    let balance_before_alice = test.token.balance(&test.alice);
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    let res = test.escrow.mock_all_auths().try_register_escrow(
+        &stocken_id,
+        &signaturit_id,
+        &test.bob,
+        &amount_to_give,
+    );
+
+    assert_eq!(res, Err(Ok(EscrowError::NoEnoughtFunds.into())));
+
+    assert_eq!(
+        test.token.balance(&test.alice),
+        balance_before_alice,
+        "proposal owner balance is not correct"
+    );
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        0,
+        "escrow contract receive funds incorrectly"
+    );
+}
+
+#[test]
+fn new_register_proposal_already_picked() {
+    let test = EscrowTest::setup();
+
+    // Add a proposal
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    // Pick a escrow
+    // The sginaturit ID is an UUID
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = amount_asked.mul(2);
+
+    let balance_before_alice = test.token.balance(&test.alice);
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    test.escrow
+        .mock_auths(&[MockAuth {
+            address: &test.bob,
+            invoke: &MockAuthInvoke {
+                contract: &test.token.address,
+                fn_name: "transfer",
+                args: (
+                    test.bob.clone(),
+                    test.escrow.address.clone(),
+                    amount_to_give.clone(),
+                )
+                    .into_val(&test.env),
+                sub_invokes: &[],
+            },
+        }])
+        .register_escrow(&stocken_id, &signaturit_id, &test.bob, &amount_to_give);
+
+    // The proposal owner should not receive the funds until the signature
+    // process is completed
+    assert_eq!(
+        test.token.balance(&test.alice),
+        balance_before_alice,
+        "proposal owner balance has changed"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob - amount_to_give,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        amount_to_give,
+        "escrow contract does not have the correct balance"
+    );
+
+    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
         id: signaturit_id,
-        propose_id: stocken_id,
+        propose_id: stocken_id.clone(),
         oracle_id: 0,
-        buyer: picker_address,
-        receiver: proposer_address,
+        buyer: test.bob.clone(),
+        receiver: test.alice,
         funds: amount_to_give,
         status: SignatureStatus::Progress,
     };
 
-    let event_expected: (Address, Vec<Val>, Val) = (
-        contract_id.clone(),
-        (REGISTER_TOPIC, symbol_short!("New")).into_val(&env),
-        (expected_signature_tx).into_val(&env),
+    let event_expected = (
+        test.escrow.address.clone(),
+        REGISTER_ESCROW.into_val(&test.env),
+        expected_signature_tx.into_val(&test.env),
     );
 
     assert!(
-        env.events().all().contains(event_expected),
-        "Wrong event data emitted"
+        test.env.events().all().contains(event_expected),
+        "register escrow event not present"
+    );
+
+    // The proposal was picked correctly.
+
+    // Made a new register with same proposal
+    let signaturit_id_2 = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give_2: i128 = amount_asked.mul(4); // Does not matter if it's higher
+
+    let res = test.escrow.mock_all_auths().try_register_escrow(
+        &stocken_id,
+        &signaturit_id_2,
+        &test.bob,
+        &amount_to_give_2,
+    );
+
+    assert_eq!(res, Err(Ok(EscrowError::PickedOrCanceled.into())));
+}
+
+#[test]
+fn new_register_signature_process_exist() {
+    let test = EscrowTest::setup();
+
+    // Add a proposal
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    // Pick a escrow
+    // The sginaturit ID is an UUID
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = amount_asked.mul(2);
+
+    let balance_before_alice = test.token.balance(&test.alice);
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    test.escrow
+        .mock_auths(&[MockAuth {
+            address: &test.bob,
+            invoke: &MockAuthInvoke {
+                contract: &test.token.address,
+                fn_name: "transfer",
+                args: (
+                    test.bob.clone(),
+                    test.escrow.address.clone(),
+                    amount_to_give.clone(),
+                )
+                    .into_val(&test.env),
+                sub_invokes: &[],
+            },
+        }])
+        .register_escrow(&stocken_id, &signaturit_id, &test.bob, &amount_to_give);
+
+    // The proposal owner should not receive the funds until the signature
+    // process is completed
+    assert_eq!(
+        test.token.balance(&test.alice),
+        balance_before_alice,
+        "proposal owner balance has changed"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob - amount_to_give,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        amount_to_give,
+        "escrow contract does not have the correct balance"
+    );
+
+    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
+        id: signaturit_id.clone(),
+        propose_id: stocken_id,
+        oracle_id: 0,
+        buyer: test.bob.clone(),
+        receiver: test.alice.clone(),
+        funds: amount_to_give,
+        status: SignatureStatus::Progress,
+    };
+
+    let event_expected = (
+        test.escrow.address.clone(),
+        REGISTER_ESCROW.into_val(&test.env),
+        expected_signature_tx.into_val(&test.env),
+    );
+
+    assert!(
+        test.env.events().all().contains(event_expected),
+        "register escrow event not present"
+    );
+
+    // Make a new proposal but when register the escrow, use the same previous
+    // signaturit id
+    // Add a proposal
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_2);
+    let amount_asked: i128 = 30_000_000_000_000_000_000; // 30 tokens
+
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    //
+
+    // Pick a escrow
+    // The sginaturit ID is an UUID
+    let same_signaturit_id = signaturit_id;
+    let amount_to_give_2: i128 = amount_asked;
+
+    let balance_before_alice = test.token.balance(&test.alice);
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    let res = test
+        .escrow
+        .mock_auths(&[MockAuth {
+            address: &test.bob,
+            invoke: &MockAuthInvoke {
+                contract: &test.token.address,
+                fn_name: "transfer",
+                args: (
+                    test.bob.clone(),
+                    test.escrow.address.clone(),
+                    amount_to_give_2.clone(),
+                )
+                    .into_val(&test.env),
+                sub_invokes: &[],
+            },
+        }])
+        .try_register_escrow(
+            &stocken_id,
+            &same_signaturit_id,
+            &test.bob,
+            &amount_to_give_2,
+        );
+
+    // The contract call will fail since the signaturit id already exist
+    assert_eq!(res, Err(Ok(EscrowError::SignatureProcessExist.into())));
+
+    assert_eq!(
+        test.token.balance(&test.alice),
+        balance_before_alice,
+        "proposal owner balance has changed"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        amount_to_give_2,
+        "escrow contract does not have the correct balance"
+    );
+}
+
+#[test]
+fn new_register() {
+    let test = EscrowTest::setup();
+
+    // Add a proposal
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    // Pick a escrow
+    // The sginaturit ID is an UUID
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let amount_to_give: i128 = amount_asked.mul(2);
+
+    let balance_before_alice = test.token.balance(&test.alice);
+    let balance_before_bob = test.token.balance(&test.bob);
+
+    test.escrow
+        .mock_auths(&[MockAuth {
+            address: &test.bob,
+            invoke: &MockAuthInvoke {
+                contract: &test.token.address,
+                fn_name: "transfer",
+                args: (
+                    test.bob.clone(),
+                    test.escrow.address.clone(),
+                    amount_to_give.clone(),
+                )
+                    .into_val(&test.env),
+                sub_invokes: &[],
+            },
+        }])
+        .register_escrow(&stocken_id, &signaturit_id, &test.bob, &amount_to_give);
+
+    // The proposal owner should not receive the funds until the signature
+    // process is completed
+    assert_eq!(
+        test.token.balance(&test.alice),
+        balance_before_alice,
+        "proposal owner balance has changed"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.bob),
+        balance_before_bob - amount_to_give,
+        "funder balance is not correct"
+    );
+
+    assert_eq!(
+        test.token.balance(&test.escrow.address),
+        amount_to_give,
+        "escrow contract does not have the correct balance"
+    );
+
+    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
+        id: signaturit_id,
+        propose_id: stocken_id,
+        oracle_id: 0,
+        buyer: test.bob,
+        receiver: test.alice,
+        funds: amount_to_give,
+        status: SignatureStatus::Progress,
+    };
+
+    let event_expected = (
+        test.escrow.address.clone(),
+        REGISTER_ESCROW.into_val(&test.env),
+        expected_signature_tx.into_val(&test.env),
+    );
+
+    assert!(
+        test.env.events().all().contains(event_expected),
+        "register escrow event not present"
     );
 }
