@@ -310,6 +310,7 @@ fn new_register_signature_process_exist() {
 
     let balance_before_alice = test.token.balance(&test.alice);
     let balance_before_bob = test.token.balance(&test.bob);
+    let balance_before_escrow = test.token.balance(&test.escrow.address);
 
     let res = test
         .escrow
@@ -351,7 +352,7 @@ fn new_register_signature_process_exist() {
 
     assert_eq!(
         test.token.balance(&test.escrow.address),
-        amount_to_give_2,
+        balance_before_escrow,
         "escrow contract does not have the correct balance"
     );
 }
