@@ -1,76 +1,77 @@
 #![cfg(test)]
 
-use crate::{types::NullableString, EscrowContract, EscrowContractClient, EscrowProposal, ProposalStatus};
+use crate::{
+    events::{ADDED_TOPIC, PROPOSAL_TOPIC},
+    test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
+    types::NullableString,
+    EscrowProposal, ProposalStatus,
+};
 use soroban_sdk::{
-    symbol_short,
     testutils::{Address as _, Events},
-    Address, Env, IntoVal, String,
+    Address, IntoVal, String,
 };
 
-// keccak256(STOCKEN_ID_1)
-pub const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
-// keccak256(STOCKEN_ID_2)
-pub const STOCKEN_ID_2: &str = "af8f0b8ba4749d7a83edcd03a18e3ee3807fca630f8a18e8e59be53ea15c9e95";
+#[test]
+fn add_proposal_not_initialized() {
+    let test = EscrowTest::setup_non_init();
+
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
+
+    let res = test
+        .escrow
+        .try_add_proposal(&stocken_id, &test.alice, &amount_asked);
+
+    assert_eq!(res, Err(Ok(EscrowError::NotInit.into())));
+}
 
 #[test]
-fn test_add_proposal() {
-    let env = Env::default();
-    let contract_id = env.register_contract(None, EscrowContract);
-    let escrow_client = EscrowContractClient::new(&env, &contract_id);
+fn add_proposal() {
+    let test = EscrowTest::setup();
 
-    // Init the escrow
-    let mock_asset_address = Address::generate(&env);
-    let mock_oracle_address = Address::generate(&env);
-    escrow_client.initialize(&mock_asset_address, &mock_oracle_address);
+    let stocken_id = String::from_str(&test.env, STOCKEN_ID_1);
+    let amount_asked: i128 = 10_000_000_000_000_000_000; // 10 tokens
 
-    let stocken_id = String::from_str(&env, STOCKEN_ID_1);
-    let proposer_address = Address::generate(&env);
-    let amount_asked: i128 = 900000;
-
-    escrow_client.add_proposal(&stocken_id, &proposer_address, &amount_asked);
+    test.escrow
+        .add_proposal(&stocken_id, &test.alice, &amount_asked);
 
     let expected_proposal = EscrowProposal {
         escrow_id: stocken_id,
-        owner: proposer_address,
+        owner: test.alice,
         status: ProposalStatus::Actived,
         min_funds: amount_asked,
         signature_tx_linked: NullableString::None,
     };
 
     let event_expected = (
-        contract_id.clone(),
-        (symbol_short!("Proposal"), symbol_short!("Added")).into_val(&env),
-        expected_proposal.into_val(&env),
+        test.escrow.address.clone(),
+        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
+        expected_proposal.into_val(&test.env),
     );
 
     assert!(
-        env.events().all().contains(event_expected),
-        "Wrong event data emitted"
+        test.env.events().all().contains(event_expected),
+        "initialized event not present"
     );
 }
 
 #[test]
 fn test_add_multiple_proposal() {
-    let env = Env::default();
-    let contract_id = env.register_contract(None, EscrowContract);
-    let escrow_client = EscrowContractClient::new(&env, &contract_id);
-
-    // Init the escrow
-    let mock_asset_address = Address::generate(&env);
-    let mock_oracle_address = Address::generate(&env);
-    escrow_client.initialize(&mock_asset_address, &mock_oracle_address);
+    let test = EscrowTest::setup();
 
     // Data for proposals
-    let stocken_id_1 = String::from_str(&env, STOCKEN_ID_1);
-    let proposer_address_1 = Address::generate(&env);
-    let amount_asked_1: i128 = 900000;
+    let stocken_id_1 = String::from_str(&test.env, STOCKEN_ID_1);
+    let proposer_address_1 = Address::generate(&test.env);
+    let amount_asked_1: i128 = 9_000_000_000_000_000_000;
 
-    let stocken_id_2 = String::from_str(&env, STOCKEN_ID_2);
-    let proposer_address_2 = Address::generate(&env);
-    let amount_asked_2: i128 = 1800000;
+    let stocken_id_2 = String::from_str(&test.env, STOCKEN_ID_2);
+    let proposer_address_2 = Address::generate(&test.env);
+    let amount_asked_2: i128 = 18_000_000_000_000_000_000;
 
-    escrow_client.add_proposal(&stocken_id_1, &proposer_address_1, &amount_asked_1);
-    escrow_client.add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
+    test.escrow
+        .add_proposal(&stocken_id_1, &proposer_address_1, &amount_asked_1);
+    test.escrow
+        .add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
 
     let expected_proposal_1 = EscrowProposal {
         escrow_id: stocken_id_1,
@@ -89,24 +90,24 @@ fn test_add_multiple_proposal() {
     };
 
     let event_expected_1 = (
-        contract_id.clone(),
-        (symbol_short!("Proposal"), symbol_short!("Added")).into_val(&env),
-        expected_proposal_1.into_val(&env),
+        test.escrow.address.clone(),
+        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
+        expected_proposal_1.into_val(&test.env),
     );
 
     let event_expected_2 = (
-        contract_id.clone(),
-        (symbol_short!("Proposal"), symbol_short!("Added")).into_val(&env),
-        expected_proposal_2.into_val(&env),
+        test.escrow.address,
+        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
+        expected_proposal_2.into_val(&test.env),
     );
 
     assert!(
-        env.events().all().contains(event_expected_1),
+        test.env.events().all().contains(event_expected_1),
         "Wrong event data emitted"
     );
 
     assert!(
-        env.events().all().contains(event_expected_2),
+        test.env.events().all().contains(event_expected_2),
         "Wrong event data emitted"
     );
 }
