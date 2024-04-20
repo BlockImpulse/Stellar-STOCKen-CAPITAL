@@ -3,7 +3,7 @@ use soroban_sdk::{contracttype, Address, Env, IntoVal, TryFromVal, Val};
 
 #[contracttype]
 pub enum Admin {
-    User,
+    Escrow,
 }
 impl storage::Storage for Admin {
     fn get<V: soroban_sdk::TryFromVal<Env, soroban_sdk::Val>>(&self, env: &Env) -> Option<V> {
