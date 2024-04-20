@@ -115,6 +115,7 @@ impl storage::Storage for DatakeyMetadata {
 
 #[contracttype]
 pub enum DataKeyEnumerable {
+    CounterId,                    // instance
     OwnedTokenIndices,            // instance
     TokenIdToIndex,               // instance
     OwnerOwnedTokenIds(Address),  // instance

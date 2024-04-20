@@ -1,10 +1,15 @@
-use soroban_sdk::{Env, IntoVal, Val};
+use soroban_sdk::{symbol_short, Env, IntoVal, Symbol, Val};
+
+/**
+ * Initialization topic
+ */
+pub const INITIALIZED_TOPIC: Symbol = symbol_short!("INITIALZD");
 
 pub enum Event {
     Mint,
     Transfer,
     Approve,
-    Burn,
+    ApproveForAll,
 }
 impl Event {
     fn name(&self) -> &'static str {
@@ -12,7 +17,7 @@ impl Event {
             Event::Mint => stringify!(Mint),
             Event::Transfer => stringify!(Transfer),
             Event::Approve => stringify!(Approve),
-            Event::Burn => stringify!(Burn),
+            Event::ApproveForAll => stringify!(ApproveForAll),
         }
     }
     pub fn publish<D>(&self, env: &Env, value: D)
