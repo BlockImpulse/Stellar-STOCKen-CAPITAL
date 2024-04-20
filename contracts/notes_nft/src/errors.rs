@@ -3,8 +3,10 @@ use soroban_sdk::contracterror;
 #[contracterror]
 #[derive(Copy, Clone, Debug)]
 pub enum Error {
-    NotOwner = 0,
-    NotNFT = 1,
-    NotAuthorized = 2,
-    OutOfBounds = 4,
+    NotInit = 0,
+    AlreadyInit = 1,
+    NotOwner = 2,
+    NotNFT = 3,
+    NotAuthorized = 4,
+    OutOfBounds = 5,
 }

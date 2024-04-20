@@ -649,6 +649,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "notes_nft"
+version = "0.0.1"
+dependencies = [
+ "soroban-sdk",
+ "uuid",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
