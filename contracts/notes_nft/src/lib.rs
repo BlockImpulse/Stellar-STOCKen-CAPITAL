@@ -59,14 +59,16 @@ impl NotesNFTContract {
         }
     }
 
-    pub fn mint(env: Env, to: Address, note_document_hash: String) {
+    pub fn mint(env: Env, to: Address, note_document_hash: String) -> u32 {
         get_admin(&env).require_auth();
 
         let new_token_id = DataKeyEnumerable::CounterId.get::<u32>(&env).unwrap();
 
         Self::internal_mint(&env, to, new_token_id, note_document_hash);
 
-        DataKeyEnumerable::CounterId.set(&env, &(new_token_id + 1u32))
+        DataKeyEnumerable::CounterId.set(&env, &(new_token_id + 1u32));
+
+        new_token_id
     }
 
     fn internal_mint(env: &Env, to: Address, token_id: u32, uri: String) {
