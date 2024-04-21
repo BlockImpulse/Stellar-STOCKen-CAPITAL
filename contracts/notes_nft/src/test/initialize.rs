@@ -2,7 +2,7 @@
 
 use crate::{
     events::INITIALIZED_TOPIC,
-    test::{Error, NotesNFTTest},
+    test::{notes_nft::Error, NotesNFTTest},
 };
 use soroban_sdk::{testutils::Events, IntoVal, String};
 

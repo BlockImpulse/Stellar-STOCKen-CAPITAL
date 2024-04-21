@@ -66,7 +66,7 @@ impl NotesNFTContract {
 
         Self::internal_mint(&env, to, new_token_id, note_document_hash);
 
-        DataKeyEnumerable::CounterId.set(&env, &(new_token_id + 1))
+        DataKeyEnumerable::CounterId.set(&env, &(new_token_id + 1u32))
     }
 
     fn internal_mint(env: &Env, to: Address, token_id: u32, uri: String) {

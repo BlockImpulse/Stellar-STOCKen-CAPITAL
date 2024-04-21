@@ -2,7 +2,7 @@
 
 use crate::{
     events::Event,
-    test::{Error, NotesNFTTest},
+    test::{notes_nft::Error, NotesNFTTest},
 };
 use soroban_sdk::{
     testutils::{Events, MockAuth, MockAuthInvoke},
