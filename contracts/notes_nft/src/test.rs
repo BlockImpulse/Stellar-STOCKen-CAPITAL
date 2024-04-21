@@ -62,3 +62,4 @@ impl<'a> NotesNFTTest<'a> {
 
 pub mod initialize;
 pub mod mint;
+pub mod transfer;

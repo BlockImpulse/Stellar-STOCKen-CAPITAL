@@ -207,6 +207,7 @@ impl ERC721 for NotesNFTContract {
 
                     // Emit the transfer event
                     let mut v: Vec<Val> = Vec::new(&env);
+                    v.push_back(from.clone().into_val(&env));
                     v.push_back(to.into_val(&env));
                     v.push_back(token_id.into());
                     Event::Transfer.publish(&env, v);

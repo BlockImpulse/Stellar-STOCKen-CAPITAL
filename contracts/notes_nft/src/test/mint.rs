@@ -91,7 +91,7 @@ fn mint() {
         "wrong bob balance"
     );
 
-    // Check the values on the vent
+    // Check the values on the event
     let event_expected_2 = (
         test.notes_nft.address.clone(),
         (Event::Mint.name(),).into_val(&test.env),
