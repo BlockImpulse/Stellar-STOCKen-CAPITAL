@@ -12,7 +12,7 @@ pub enum Event {
     ApproveForAll,
 }
 impl Event {
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             Event::Mint => stringify!(Mint),
             Event::Transfer => stringify!(Transfer),
