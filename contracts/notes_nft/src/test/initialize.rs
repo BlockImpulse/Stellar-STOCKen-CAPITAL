@@ -19,13 +19,19 @@ fn initialization() {
     let event_expected = (
         test.notes_nft.address.clone(),
         (INITIALIZED_TOPIC,).into_val(&test.env),
-        (test.admin_escrow, name, symbol).into_val(&test.env),
+        (test.admin_escrow.clone(), name.clone(), symbol.clone()).into_val(&test.env),
     );
 
     assert!(
         test.env.events().all().contains(event_expected),
         "initialized event not present"
     );
+
+    assert_eq!(test.notes_nft.admin(), test.admin_escrow, "wrong NFT admin");
+    assert_eq!(test.notes_nft.total_supply(), 0, "wrong initial supply");
+
+    assert_eq!(test.notes_nft.name(), name, "wrong name");
+    assert_eq!(test.notes_nft.symbol(), symbol, "wrong symbol");
 }
 
 #[test]
