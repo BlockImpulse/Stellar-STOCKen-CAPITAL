@@ -1,20 +1,23 @@
 #![no_std]
-mod erc721traits;
+
+pub mod erc721traits;
 mod errors;
 mod events;
 mod storage;
+mod test;
 mod types;
 
-use crate::erc721traits::enumerable::ERC721Enumerable;
-use crate::erc721traits::erc721::ERC721;
-use crate::erc721traits::metadata::ERC721Metadata;
-use errors::*;
-use events::*;
+pub use crate::erc721traits::enumerable::ERC721Enumerable;
+pub use crate::erc721traits::erc721::ERC721;
+pub use crate::erc721traits::metadata::ERC721Metadata;
+pub use errors::*;
+pub use events::*;
+pub use storage::Storage;
+pub use types::*;
+
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, Address, Env, IntoVal, Map, String, Val, Vec,
 };
-use storage::Storage;
-use types::*;
 
 fn get_admin(env: &Env) -> Address {
     Admin::Escrow.get(env).unwrap()
@@ -36,7 +39,7 @@ impl NotesNFTContract {
         DatakeyMetadata::Name.set(&env, &name);
         DatakeyMetadata::Symbol.set(&env, &symbol);
 
-        DataKeyEnumerable::CounterId.set(&env, &0);
+        DataKeyEnumerable::CounterId.set(&env, &u32::MIN);
         DataKeyEnumerable::OwnedTokenIndices.set(&env, &Vec::<u32>::new(&env));
         DataKeyEnumerable::TokenIdToIndex.set(&env, &Map::<u32, u32>::new(&env));
 
@@ -110,6 +113,7 @@ impl NotesNFTContract {
         } else {
             panic!("Token already exist")
         }
+
         let mut v: Vec<Val> = Vec::new(env);
         v.push_back(to.into_val(env));
         v.push_back(token_id.into());
@@ -296,6 +300,7 @@ impl ERC721 for NotesNFTContract {
     }
 }
 
+#[contractimpl]
 impl ERC721Metadata for NotesNFTContract {
     fn name(env: Env) -> String {
         DatakeyMetadata::Name.get(&env).unwrap()
