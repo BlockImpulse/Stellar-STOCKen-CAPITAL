@@ -5,6 +5,7 @@ use soroban_sdk::{contracterror, contracttype, Address, Env, IntoVal, String, Tr
 pub enum DataKey {
     AssetAddress,
     OracleAddress,
+    NFTNotesAddress,
     Proposal(String),
     SignatureProcess(String),
 }
@@ -15,7 +16,9 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::get(env, self)
             }
-            &DataKey::AssetAddress | &DataKey::OracleAddress => storage::Instance::get(env, self),
+            &DataKey::AssetAddress | &DataKey::OracleAddress | DataKey::NFTNotesAddress => {
+                storage::Instance::get(env, self)
+            }
         }
     }
 
@@ -24,7 +27,8 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::set(env, self, val)
             }
-            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+
+            &DataKey::AssetAddress | &DataKey::OracleAddress | DataKey::NFTNotesAddress => {
                 storage::Instance::set(env, self, val)
             }
         }
@@ -35,7 +39,9 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::has(env, self)
             }
-            &DataKey::AssetAddress | &DataKey::OracleAddress => storage::Instance::has(env, self),
+            &DataKey::AssetAddress | &DataKey::OracleAddress | DataKey::NFTNotesAddress => {
+                storage::Instance::has(env, self)
+            }
         }
     }
 
@@ -48,7 +54,7 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::extend(env, self, min_ledger_to_live)
             }
-            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+            &DataKey::AssetAddress | &DataKey::OracleAddress | DataKey::NFTNotesAddress => {
                 storage::Instance::extend(env, min_ledger_to_live);
             }
         };
@@ -60,7 +66,7 @@ impl storage::Storage for DataKey {
             DataKey::Proposal(_) | DataKey::SignatureProcess(_) => {
                 storage::Persistent::remove(env, self)
             }
-            &DataKey::AssetAddress | &DataKey::OracleAddress => {
+            &DataKey::AssetAddress | &DataKey::OracleAddress | DataKey::NFTNotesAddress => {
                 storage::Instance::remove(env, self)
             }
         }
@@ -137,6 +143,11 @@ pub struct SignatureTxEscrow {
      * Current stauts of the signature
      */
     pub status: SignatureStatus,
+
+    /**
+     * ID of the NFT related to this signature tx if succesful
+     */
+    pub nft_proof_id: Option<u32>,
 }
 
 #[contracterror]
@@ -153,7 +164,6 @@ pub enum EscrowError {
     NoEnoughtFunds = 7,
     AlreadyInitialized = 8,
     SignatureProcessExist = 9,
-
 }
 
 #[contracttype]

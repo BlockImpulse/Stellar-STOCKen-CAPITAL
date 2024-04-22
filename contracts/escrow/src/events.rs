@@ -1,56 +1,27 @@
-use soroban_sdk::{symbol_short, Symbol};
+use soroban_sdk::{Env, IntoVal, Val};
 
-/**
- * Proposal topic
- */
-pub const PROPOSAL_TOPIC: Symbol = symbol_short!("PROPOSAL");
+pub enum EscrowEvent {
+    Initialized,
+    NewProposal,
+    RegisterEscrow,
+    SignedCompleted,
+    SignedFailed,
+}
 
-/**
- * Added topic
- */
-pub const ADDED_TOPIC: Symbol = symbol_short!("ADDED");
-
-/**
- * Register topic
- */
-pub const REGISTER_TOPIC: Symbol = symbol_short!("REGISTER");
-
-/**
- * Escrow topic
- */
-pub const ESCROW_TOPIC: Symbol = symbol_short!("ESCROW");
-
-/**
- * Initialization topic
- */
-pub const INITIALIZED_TOPIC: Symbol = symbol_short!("INITIALZD");
-
-/**
- * Signed topic
- */
-pub const SIGNED_TOPIC: Symbol = symbol_short!("SIGNED");
-
-/**
- * Completed topic
- */
-pub const COMPLETED_TOPIC: Symbol = symbol_short!("COMPLETED");
-
-/**
- * Failed topic symbol
- */
-pub const FAILED_TOPIC: Symbol = symbol_short!("FAILED");
-
-/**
- * New escrow register topic
- */
-pub const REGISTER_ESCROW: (Symbol, Symbol) = (REGISTER_TOPIC, ESCROW_TOPIC);
-
-/**
- * Signature process completed topic
- */
-pub const SIGNED_COMPLETED_TOPIC: (Symbol, Symbol) = (SIGNED_TOPIC, COMPLETED_TOPIC);
-
-/**
- * Signature process failed topic
- */
-pub const SIGNED_FAILED_TOPIC: (Symbol, Symbol) = (SIGNED_TOPIC, FAILED_TOPIC);
+impl EscrowEvent {
+    pub fn name(&self) -> &'static str {
+        match self {
+            EscrowEvent::Initialized => stringify!(Initialized),
+            EscrowEvent::NewProposal => stringify!(NewProposal),
+            EscrowEvent::RegisterEscrow => stringify!(RegisterEscrow),
+            EscrowEvent::SignedCompleted => stringify!(SignedCompleted),
+            EscrowEvent::SignedFailed => stringify!(SignedFailed),
+        }
+    }
+    pub fn publish<D>(&self, env: &Env, value: D)
+    where
+        D: IntoVal<Env, Val>,
+    {
+        env.events().publish((self.name(),), value);
+    }
+}

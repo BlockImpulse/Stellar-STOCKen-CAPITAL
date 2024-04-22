@@ -8,13 +8,19 @@ pub mod oracle {
     );
     pub type OracleClient<'a> = Client<'a>;
 }
-use events::{
-    ADDED_TOPIC, INITIALIZED_TOPIC, PROPOSAL_TOPIC, REGISTER_ESCROW, SIGNED_COMPLETED_TOPIC,
-    SIGNED_FAILED_TOPIC,
-};
+
+pub mod notes_nft {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/notes_nft.wasm"
+    );
+    pub type NotesNFTClient<'a> = Client<'a>;
+}
+
+use events::EscrowEvent;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, token, vec, Address, Env, IntoVal, String, Symbol,
+    Val, Vec,
 };
 use storage::Storage;
 use types::{
@@ -34,6 +40,10 @@ fn get_oracle(env: &Env) -> Address {
 
 fn get_asset(env: &Env) -> Address {
     DataKey::AssetAddress.get(env).unwrap()
+}
+
+fn get_nft(env: &Env) -> Address {
+    DataKey::NFTNotesAddress.get(env).unwrap()
 }
 
 fn transfer_funds(env: &Env, from: &Address, to: &Address, amount: &i128) {
@@ -65,24 +75,43 @@ pub struct EscrowContract;
 impl EscrowContract {
     pub fn get_oracle(env: Env) -> Address {
         check_initialization(&env);
-        return get_oracle(&env);
+        get_oracle(&env)
     }
 
     pub fn get_asset(env: Env) -> Address {
         check_initialization(&env);
-        return get_asset(&env);
+        get_asset(&env)
     }
 
-    pub fn initialize(env: Env, asset_address: Address, oracle_address: Address) {
-        if DataKey::AssetAddress.has(&env) || DataKey::OracleAddress.has(&env) {
+    pub fn get_nft_notes(env: Env) -> Address {
+        check_initialization(&env);
+        get_nft(&env)
+    }
+
+    pub fn initialize(
+        env: Env,
+        asset_address: Address,
+        oracle_address: Address,
+        nft_notes_address: Address,
+    ) {
+        if DataKey::AssetAddress.has(&env)
+            && DataKey::OracleAddress.has(&env)
+            && DataKey::NFTNotesAddress.has(&env)
+        {
             panic_with_error!(env, EscrowError::AlreadyInitialized);
         }
 
         DataKey::AssetAddress.set(&env, &asset_address);
         DataKey::OracleAddress.set(&env, &oracle_address);
+        DataKey::NFTNotesAddress.set(&env, &nft_notes_address);
 
-        env.events()
-            .publish((INITIALIZED_TOPIC,), (asset_address, oracle_address));
+        // Emit the Initialized event
+        let mut values: Vec<Val> = Vec::new(&env);
+        values.push_back(asset_address.into_val(&env));
+        values.push_back(oracle_address.into_val(&env));
+        values.push_back(nft_notes_address.into_val(&env));
+
+        EscrowEvent::Initialized.publish(&env, values);
     }
 
     /**
@@ -102,17 +131,20 @@ impl EscrowContract {
 
         let propose = EscrowProposal {
             escrow_id: stocken_proposal_id.clone(),
-            owner: proposer_address,
+            owner: proposer_address.clone(),
             status: ProposalStatus::Actived,
             min_funds,
             signature_tx_linked: NullableString::None,
         };
 
-        env.events()
-            .publish((PROPOSAL_TOPIC, ADDED_TOPIC), propose.clone());
-
         // Save the proposal
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
+
+        // Emit the NewProposal event
+        let mut values: Vec<Val> = Vec::new(&env);
+        values.push_back(propose.escrow_id.into_val(&env));
+        values.push_back(proposer_address.into_val(&env));
+        EscrowEvent::NewProposal.publish(&env, values);
     }
 
     pub fn register_escrow(
@@ -168,24 +200,32 @@ impl EscrowContract {
             receiver: propose.owner.clone(),
             funds,
             status: SignatureStatus::Progress,
+            nft_proof_id: None,
         };
-
-        env.events().publish(REGISTER_ESCROW, tx_register.clone());
 
         // This way, the propose can be picked just once per time
         propose.status = ProposalStatus::Picked;
         propose.signature_tx_linked = NullableString::Some(signaturit_id.clone());
         DataKey::Proposal(proposal_id).set(&env, &propose);
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
+
+        // Emit the RegisterEscrow event
+        let mut values: Vec<Val> = Vec::new(&env);
+        values.push_back(tx_register.id.into_val(&env));
+        values.push_back(tx_register.propose_id.into_val(&env));
+        values.push_back(tx_register.oracle_id.into_val(&env));
+        values.push_back(tx_register.buyer.into_val(&env));
+        values.push_back(tx_register.funds.into_val(&env));
+        EscrowEvent::RegisterEscrow.publish(&env, values);
     }
 
-    pub fn completed_signature(env: Env, signaturit_id: String) {
+    pub fn completed_signature(env: Env, signaturit_id: String, document_hash: String) {
         check_initialization(&env);
         get_oracle(&env).require_auth();
 
         let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
 
-        let mut propose = get_proposal(&env, signature_process.propose_id);
+        let mut propose = get_proposal(&env, signature_process.clone().propose_id);
 
         // Release the funds to the owner of the propose
         transfer_funds(
@@ -198,9 +238,38 @@ impl EscrowContract {
         signature_process.status = SignatureStatus::Completed;
         propose.status = ProposalStatus::Completed;
 
-        // TODO: Mint the NFT with the signature ID and the propose ID
-        env.events()
-            .publish(SIGNED_COMPLETED_TOPIC, (signaturit_id, propose.escrow_id));
+        // Get the NFT client
+        let nft_client = notes_nft::NotesNFTClient::new(&env, &get_nft(&env));
+
+        // Grant auth for calling the function
+        // Mint to NFT for the "buyer" address since is the address that gave the funds
+        env.authorize_as_current_contract(vec![
+            &env,
+            InvokerContractAuthEntry::Contract(SubContractInvocation {
+                context: ContractContext {
+                    contract: get_nft(&env),
+                    fn_name: Symbol::new(&env, "mint"),
+                    args: (signature_process.buyer.clone(), document_hash.clone()).into_val(&env),
+                },
+                sub_invocations: vec![&env],
+            }),
+        ]);
+
+        // NFT ID minted
+        let token_id_minted: u32 = nft_client.mint(&signature_process.buyer, &document_hash);
+
+        signature_process.nft_proof_id = Some(token_id_minted);
+        DataKey::SignatureProcess(signaturit_id.clone()).set(&env, &signature_process);
+
+        // Emit the SignedCompleted event
+        let mut values: Vec<Val> = Vec::new(&env);
+        values.push_back(signature_process.id.into_val(&env));
+        values.push_back(signature_process.propose_id.into_val(&env));
+        values.push_back(signature_process.buyer.into_val(&env));
+        values.push_back(signature_process.receiver.into_val(&env));
+        values.push_back(signature_process.funds.into_val(&env));
+        values.push_back(signature_process.nft_proof_id.into_val(&env));
+        EscrowEvent::SignedCompleted.publish(&env, values);
     }
 
     pub fn failed_signature(env: Env, signaturit_id: String) {
@@ -209,7 +278,7 @@ impl EscrowContract {
 
         let mut signature_process = get_signature_tx_escrow(&env, signaturit_id.clone());
 
-        let mut propose = get_proposal(&env, signature_process.propose_id);
+        let mut propose = get_proposal(&env, signature_process.clone().propose_id);
 
         // Return the funds to the address that picked the propose
         transfer_funds(
@@ -223,10 +292,12 @@ impl EscrowContract {
         propose.status = ProposalStatus::Actived;
         propose.signature_tx_linked = NullableString::None;
 
-        env.events().publish(
-            SIGNED_FAILED_TOPIC,
-            (signature_process.id, propose.escrow_id),
-        );
+        // Emit the SignedFailed event
+        let mut values: Vec<Val> = Vec::new(&env);
+        values.push_back(signature_process.id.into_val(&env));
+        values.push_back(signature_process.propose_id.into_val(&env));
+        values.push_back(signature_process.buyer.into_val(&env));
+        EscrowEvent::SignedFailed.publish(&env, values);
     }
 
     // TODO: Request for cancel signature process
