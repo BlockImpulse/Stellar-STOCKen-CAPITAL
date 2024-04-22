@@ -5,9 +5,8 @@ use core::ops::{Div, Mul};
 use std::string::ToString;
 
 use crate::{
-    events::REGISTER_ESCROW,
+    events::EscrowEvent,
     test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
-    types::{SignatureStatus, SignatureTxEscrow},
 };
 use soroban_sdk::{
     testutils::{Events, MockAuth, MockAuthInvoke},
@@ -179,20 +178,17 @@ fn new_register_proposal_already_picked() {
         "escrow contract does not have the correct balance"
     );
 
-    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
-        id: signaturit_id,
-        propose_id: stocken_id.clone(),
-        oracle_id: 0,
-        buyer: test.bob.clone(),
-        receiver: test.alice,
-        funds: amount_to_give,
-        status: SignatureStatus::Progress,
-    };
-
     let event_expected = (
         test.escrow.address.clone(),
-        REGISTER_ESCROW.into_val(&test.env),
-        expected_signature_tx.into_val(&test.env),
+        (EscrowEvent::RegisterEscrow.name(),).into_val(&test.env),
+        (
+            signaturit_id,
+            stocken_id.clone(),
+            0u32,
+            test.bob.clone(),
+            amount_to_give,
+        )
+            .into_val(&test.env),
     );
 
     assert!(
@@ -271,20 +267,17 @@ fn new_register_signature_process_exist() {
         "escrow contract does not have the correct balance"
     );
 
-    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
-        id: signaturit_id.clone(),
-        propose_id: stocken_id,
-        oracle_id: 0,
-        buyer: test.bob.clone(),
-        receiver: test.alice.clone(),
-        funds: amount_to_give,
-        status: SignatureStatus::Progress,
-    };
-
     let event_expected = (
         test.escrow.address.clone(),
-        REGISTER_ESCROW.into_val(&test.env),
-        expected_signature_tx.into_val(&test.env),
+        (EscrowEvent::RegisterEscrow.name(),).into_val(&test.env),
+        (
+            signaturit_id.clone(),
+            stocken_id.clone(),
+            0u32,
+            test.bob.clone(),
+            amount_to_give,
+        )
+            .into_val(&test.env),
     );
 
     assert!(
@@ -412,20 +405,17 @@ fn new_register() {
         "escrow contract does not have the correct balance"
     );
 
-    let expected_signature_tx: SignatureTxEscrow = SignatureTxEscrow {
-        id: signaturit_id,
-        propose_id: stocken_id,
-        oracle_id: 0,
-        buyer: test.bob,
-        receiver: test.alice,
-        funds: amount_to_give,
-        status: SignatureStatus::Progress,
-    };
-
     let event_expected = (
         test.escrow.address.clone(),
-        REGISTER_ESCROW.into_val(&test.env),
-        expected_signature_tx.into_val(&test.env),
+        (EscrowEvent::RegisterEscrow.name(),).into_val(&test.env),
+        (
+            signaturit_id,
+            stocken_id.clone(),
+            0u32,
+            test.bob.clone(),
+            amount_to_give,
+        )
+            .into_val(&test.env),
     );
 
     assert!(
@@ -433,5 +423,3 @@ fn new_register() {
         "register escrow event not present"
     );
 }
-
-// TODO: Multiple register to check the oracle id

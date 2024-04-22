@@ -33,6 +33,19 @@ fn create_escrow_contract<'a>(env: &Env) -> EscrowClient<'a> {
     EscrowClient::new(&env, &contract_id)
 }
 
+pub mod notes_nft {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/notes_nft.wasm"
+    );
+    pub type NotesNFTClient<'a> = Client<'a>;
+}
+use notes_nft::NotesNFTClient;
+
+fn create_nft_contract<'a>(env: &Env) -> NotesNFTClient<'a> {
+    let contract_id = env.register_contract_wasm(None, notes_nft::WASM);
+    NotesNFTClient::new(&env, &contract_id)
+}
+
 fn create_token_contract<'a>(
     env: &Env,
     admin: &Address,
@@ -53,6 +66,7 @@ pub struct EscrowTest<'a> {
     env: Env,
     escrow: EscrowClient<'a>,
     oracle: OracleClient<'a>,
+    nft_notes: NotesNFTClient<'a>,
     token: TokenClient<'a>,
     alice: Address,
     bob: Address,
@@ -66,9 +80,11 @@ impl<'a> EscrowTest<'a> {
         // Initialize both contracts
         test_setup.oracle.initialize(&test_setup.admin);
 
-        test_setup
-            .escrow
-            .initialize(&test_setup.token.address, &test_setup.oracle.address);
+        test_setup.escrow.initialize(
+            &test_setup.token.address,
+            &test_setup.oracle.address,
+            &test_setup.nft_notes.address,
+        );
 
         return test_setup;
     }
@@ -87,6 +103,7 @@ impl<'a> EscrowTest<'a> {
         // Create the contracts
         let escrow_client = create_escrow_contract(&env);
         let oracle_client = create_oracle_contract(&env);
+        let nft_client = create_nft_contract(&env);
 
         let (token, token_admin) = create_token_contract(&env, &admin);
 
@@ -101,6 +118,7 @@ impl<'a> EscrowTest<'a> {
             env,
             escrow: escrow_client,
             oracle: oracle_client,
+            nft_notes: nft_client,
             token,
             alice,
             bob,

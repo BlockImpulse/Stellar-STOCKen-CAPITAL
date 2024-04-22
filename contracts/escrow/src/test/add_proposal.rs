@@ -1,10 +1,8 @@
 #![cfg(test)]
 
 use crate::{
-    events::{ADDED_TOPIC, PROPOSAL_TOPIC},
+    events::EscrowEvent,
     test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
-    types::NullableString,
-    EscrowProposal, ProposalStatus,
 };
 use soroban_sdk::{
     testutils::{Address as _, Events},
@@ -35,18 +33,10 @@ fn add_proposal_already_proposed() {
     test.escrow
         .add_proposal(&stocken_id, &test.alice, &amount_asked);
 
-    let expected_proposal = EscrowProposal {
-        escrow_id: stocken_id.clone(),
-        owner: test.alice.clone(),
-        status: ProposalStatus::Actived,
-        min_funds: amount_asked,
-        signature_tx_linked: NullableString::None,
-    };
-
     let event_expected = (
         test.escrow.address.clone(),
-        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
-        expected_proposal.into_val(&test.env),
+        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (stocken_id.clone(), test.alice.clone()).into_val(&test.env),
     );
 
     assert!(
@@ -74,18 +64,10 @@ fn add_proposal() {
     test.escrow
         .add_proposal(&stocken_id, &test.alice, &amount_asked);
 
-    let expected_proposal = EscrowProposal {
-        escrow_id: stocken_id,
-        owner: test.alice,
-        status: ProposalStatus::Actived,
-        min_funds: amount_asked,
-        signature_tx_linked: NullableString::None,
-    };
-
     let event_expected = (
         test.escrow.address.clone(),
-        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
-        expected_proposal.into_val(&test.env),
+        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (stocken_id.clone(), test.alice.clone()).into_val(&test.env),
     );
 
     assert!(
@@ -112,32 +94,16 @@ fn test_add_multiple_proposal() {
     test.escrow
         .add_proposal(&stocken_id_2, &proposer_address_2, &amount_asked_2);
 
-    let expected_proposal_1 = EscrowProposal {
-        escrow_id: stocken_id_1,
-        owner: proposer_address_1,
-        status: ProposalStatus::Actived,
-        min_funds: amount_asked_1,
-        signature_tx_linked: NullableString::None,
-    };
-
-    let expected_proposal_2 = EscrowProposal {
-        escrow_id: stocken_id_2,
-        owner: proposer_address_2,
-        status: ProposalStatus::Actived,
-        min_funds: amount_asked_2,
-        signature_tx_linked: NullableString::None,
-    };
-
     let event_expected_1 = (
         test.escrow.address.clone(),
-        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
-        expected_proposal_1.into_val(&test.env),
+        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (stocken_id_1, proposer_address_1).into_val(&test.env),
     );
 
     let event_expected_2 = (
         test.escrow.address,
-        (PROPOSAL_TOPIC, ADDED_TOPIC).into_val(&test.env),
-        expected_proposal_2.into_val(&test.env),
+        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (stocken_id_2, proposer_address_2).into_val(&test.env),
     );
 
     assert!(
