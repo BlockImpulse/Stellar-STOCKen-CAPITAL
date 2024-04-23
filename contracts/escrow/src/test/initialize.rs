@@ -31,12 +31,12 @@ fn initialization() {
 
     // Check Initialized event
     let event_expected = (
-        test.escrow.address,
+        test.escrow.address.clone(),
         (EscrowEvent::Initialized.name(),).into_val(&test.env),
         (
-            test.token.address,
-            test.oracle.address,
-            test.nft_notes.address,
+            test.token.address.clone(),
+            test.oracle.address.clone(),
+            test.nft_notes.address.clone(),
         )
             .into_val(&test.env),
     );
@@ -45,6 +45,10 @@ fn initialization() {
         test.env.events().all().contains(event_expected),
         "initialized event not present"
     );
+
+    assert_eq!(test.escrow.get_asset(), test.token.address);
+    assert_eq!(test.escrow.get_oracle(), test.oracle.address);
+    assert_eq!(test.escrow.get_nft_notes(), test.nft_notes.address);
 }
 
 #[test]
