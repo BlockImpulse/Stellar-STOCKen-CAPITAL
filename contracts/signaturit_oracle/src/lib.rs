@@ -1,8 +1,11 @@
 #![no_std]
 mod error;
 mod events;
+mod oracle_traits;
 mod storage;
 mod types;
+
+use oracle_traits::oracle_implementer::OracleImplementerClient;
 
 use error::OracleError;
 use events::OracleEvent;
@@ -12,12 +15,6 @@ use soroban_sdk::{
 };
 use storage::Storage;
 use types::{DataKey, SignaturitProcess};
-
-pub mod escrow {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/escrow.wasm");
-    pub type EscrowClient<'a> = Client<'a>;
-}
-use escrow::EscrowClient;
 
 fn check_initialization(env: &Env) {
     if !DataKey::Admin.has(env) {
@@ -103,7 +100,8 @@ impl SignaturitOracle {
             .get(&env)
             .unwrap();
 
-        let escrow_client = EscrowClient::new(&env, &signature_process.send_to);
+        // The contract should implement the Trait
+        let implementer_client = OracleImplementerClient::new(&env, &signature_process.send_to);
 
         if is_success {
             // The signature proccess was completed (the stauts is `completed`)
@@ -131,8 +129,8 @@ impl SignaturitOracle {
                 }),
             ]);
 
-            // Call the escrow
-            escrow_client
+            // Call the implementer with completed
+            implementer_client
                 .completed_signature(&signature_process.signaturit_id, &document_hash.unwrap());
         } else {
             // The signature process has failed (the staus is expired, canceled or declined)
@@ -149,11 +147,13 @@ impl SignaturitOracle {
                 }),
             ]);
 
-            // Call failed
-            escrow_client.failed_signature(&signature_process.signaturit_id);
+            // Call the implementer with failed
+            implementer_client.failed_signature(&signature_process.signaturit_id);
         }
 
         OracleEvent::SignatureResponse(signature_process.signaturit_id, oracle_id, is_success)
             .publish(&env);
     }
 }
+
+mod test;
