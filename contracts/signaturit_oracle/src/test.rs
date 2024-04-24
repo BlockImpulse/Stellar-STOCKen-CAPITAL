@@ -135,3 +135,4 @@ impl<'a> OracleTest<'a> {
 }
 
 mod initialize;
+mod register;

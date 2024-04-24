@@ -955,6 +955,7 @@ name = "signaturit_oracle"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "uuid",
 ]
 
 [[package]]
