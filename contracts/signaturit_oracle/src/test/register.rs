@@ -11,6 +11,19 @@ use crate::{
 };
 
 #[test]
+fn register_new_process_not_init() {
+    let test = OracleTest::setup_non_init();
+
+    let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
+
+    let resp = test
+        .oracle
+        .try_register_new_signature_process(&test.alice, &signaturit_id);
+
+    assert_eq!(resp, Err(Ok(OracleError::NotInit.into())));
+}
+
+#[test]
 fn register_new_process() {
     let test = OracleTest::setup();
 
