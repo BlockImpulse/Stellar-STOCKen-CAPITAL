@@ -126,10 +126,6 @@ impl SignaturitOracle {
         check_initialization(&env);
         get_admin(&env).require_auth();
 
-        if !DataKey::OracleProcess(oracle_id).has(&env) {
-            panic_with_error!(env, OracleError::ProcessNotFound);
-        }
-
         let mut signature_process = get_process_by_id(&env, &oracle_id);
 
         // The contract should implement the Trait
