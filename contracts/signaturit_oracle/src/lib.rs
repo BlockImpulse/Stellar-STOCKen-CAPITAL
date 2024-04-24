@@ -14,7 +14,7 @@ use soroban_sdk::{
     contract, contractimpl, panic_with_error, vec, Address, Env, IntoVal, String, Symbol,
 };
 use storage::Storage;
-use types::{DataKey, SignaturitProcess};
+use types::{DataKey, SignatureResponse, SignaturitProcess};
 
 fn check_initialization(env: &Env) {
     if !DataKey::Admin.has(env) {
@@ -26,6 +26,25 @@ fn get_admin(env: &Env) -> Address {
     DataKey::Admin.get(env).unwrap()
 }
 
+fn get_process_by_id(env: &Env, oracle_id: &u32) -> SignaturitProcess {
+    if !DataKey::OracleProcess(*oracle_id).has(&env) {
+        panic_with_error!(&env, OracleError::ProcessNotFound);
+    }
+
+    let signature_id: String = DataKey::OracleProcess(*oracle_id).get(&env).unwrap();
+    DataKey::SignaturitProcess(signature_id).get(&env).unwrap()
+}
+
+fn get_process_by_signature_id(env: &Env, signature_id: &String) -> SignaturitProcess {
+    if !DataKey::SignaturitProcess(signature_id.clone()).has(&env) {
+        panic_with_error!(&env, OracleError::ProcessNotFound);
+    }
+
+    DataKey::SignaturitProcess(signature_id.clone())
+        .get(&env)
+        .unwrap()
+}
+
 #[contract]
 pub struct SignaturitOracle;
 
@@ -35,6 +54,15 @@ impl SignaturitOracle {
         check_initialization(&env);
         get_admin(&env)
     }
+
+    pub fn get_process_by_id(env: Env, oracle_id: u32) -> SignaturitProcess {
+        get_process_by_id(&env, &oracle_id)
+    }
+
+    pub fn get_process_by_signature_id(env: Env, signature_id: String) -> SignaturitProcess {
+        get_process_by_signature_id(&env, &signature_id)
+    }
+
     /**
     Initialize the contract with the given arguments, making the oracle ready
     to be used.
@@ -69,19 +97,21 @@ impl SignaturitOracle {
 
         let oracle_id = DataKey::RegisterCounter.get(&env).unwrap_or(0);
 
-        if DataKey::SignaturitProcess(oracle_id.clone()).has(&env) {
+        if DataKey::SignaturitProcess(signaturit_id.clone()).has(&env) {
             panic_with_error!(env, OracleError::SignatureIdAlredyExist);
         }
 
         let signature_process = SignaturitProcess {
-            id: oracle_id.clone(),
-            signaturit_id: signaturit_id.clone(),
+            id: signaturit_id.clone(),
+            oracle_id: oracle_id.clone(),
             send_to: caller,
+            status: SignatureResponse::Wait,
         };
 
-        OracleEvent::NewSignatureProcess(signaturit_id, oracle_id).publish(&env);
+        OracleEvent::NewSignatureProcess(signaturit_id.clone(), oracle_id).publish(&env);
 
-        DataKey::SignaturitProcess(oracle_id).set(&env, &signature_process);
+        DataKey::OracleProcess(oracle_id).set(&env, &signaturit_id);
+        DataKey::SignaturitProcess(signaturit_id).set(&env, &signature_process);
         DataKey::RegisterCounter.set(&env, &(oracle_id + 1));
 
         return oracle_id;
@@ -96,9 +126,11 @@ impl SignaturitOracle {
         check_initialization(&env);
         get_admin(&env).require_auth();
 
-        let signature_process: SignaturitProcess = DataKey::SignaturitProcess(oracle_id.clone())
-            .get(&env)
-            .unwrap();
+        if !DataKey::OracleProcess(oracle_id).has(&env) {
+            panic_with_error!(env, OracleError::ProcessNotFound);
+        }
+
+        let mut signature_process = get_process_by_id(&env, &oracle_id);
 
         // The contract should implement the Trait
         let implementer_client = OracleImplementerClient::new(&env, &signature_process.send_to);
@@ -117,12 +149,9 @@ impl SignaturitOracle {
                 &env,
                 InvokerContractAuthEntry::Contract(SubContractInvocation {
                     context: ContractContext {
-                        contract: signature_process.send_to,
+                        contract: signature_process.send_to.clone(),
                         fn_name: Symbol::new(&env, "completed_signature"),
-                        args: (
-                            signature_process.signaturit_id.clone(),
-                            document_hash.clone().unwrap(),
-                        )
+                        args: (signature_process.id.clone(), document_hash.clone().unwrap())
                             .into_val(&env),
                     },
                     sub_invocations: vec![&env],
@@ -130,8 +159,10 @@ impl SignaturitOracle {
             ]);
 
             // Call the implementer with completed
-            implementer_client
-                .completed_signature(&signature_process.signaturit_id, &document_hash.unwrap());
+            implementer_client.completed_signature(&signature_process.id, &document_hash.unwrap());
+
+            // Update status
+            signature_process.status = SignatureResponse::Completed;
         } else {
             // The signature process has failed (the staus is expired, canceled or declined)
 
@@ -139,20 +170,25 @@ impl SignaturitOracle {
                 &env,
                 InvokerContractAuthEntry::Contract(SubContractInvocation {
                     context: ContractContext {
-                        contract: signature_process.send_to,
+                        contract: signature_process.send_to.clone(),
                         fn_name: Symbol::new(&env, "failed_signature"),
-                        args: (signature_process.signaturit_id.clone(),).into_val(&env),
+                        args: (signature_process.id.clone(),).into_val(&env),
                     },
                     sub_invocations: vec![&env],
                 }),
             ]);
 
             // Call the implementer with failed
-            implementer_client.failed_signature(&signature_process.signaturit_id);
+            implementer_client.failed_signature(&signature_process.id);
+
+            // Update status
+            signature_process.status = SignatureResponse::Failed;
         }
 
-        OracleEvent::SignatureResponse(signature_process.signaturit_id, oracle_id, is_success)
-            .publish(&env);
+        // Save the new status
+        DataKey::SignaturitProcess(signature_process.id.clone()).set(&env, &signature_process);
+
+        OracleEvent::SignatureResponse(signature_process.id, oracle_id, is_success).publish(&env);
     }
 }
 

@@ -9,4 +9,5 @@ pub enum OracleError {
     OnlyAdmin = 2,
     SignatureIdAlredyExist = 3,
     MissingDocHash = 4,
+    ProcessNotFound = 5,
 }

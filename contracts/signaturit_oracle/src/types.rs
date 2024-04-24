@@ -5,32 +5,21 @@ use soroban_sdk::{contracttype, Address, Env, IntoVal, String, TryFromVal, Val};
 pub enum DataKey {
     Admin,
     RegisterCounter,
-    SignaturitProcess(u32),
+    SignaturitProcess(String),
+    OracleProcess(u32),
 }
 
 impl storage::Storage for DataKey {
     fn get<V: TryFromVal<Env, Val>>(&self, env: &Env) -> Option<V> {
-        match self {
-            DataKey::Admin | DataKey::RegisterCounter | &DataKey::SignaturitProcess(_) => {
-                storage::Persistent::get(env, self)
-            }
-        }
+        storage::Persistent::get(env, self)
     }
 
     fn set<V: IntoVal<Env, Val>>(&self, env: &Env, val: &V) {
-        match self {
-            DataKey::Admin | DataKey::RegisterCounter | &DataKey::SignaturitProcess(_) => {
-                storage::Persistent::set(env, self, val)
-            }
-        }
+        storage::Persistent::set(env, self, val)
     }
 
     fn has(&self, env: &Env) -> bool {
-        match self {
-            DataKey::Admin | DataKey::RegisterCounter | &DataKey::SignaturitProcess(_) => {
-                storage::Persistent::has(env, self)
-            }
-        }
+        storage::Persistent::has(env, self)
     }
 
     fn extend(&self, env: &Env, min_ledger_to_live: u32) -> &Self {
@@ -38,34 +27,41 @@ impl storage::Storage for DataKey {
             return self;
         }
 
-        match self {
-            DataKey::Admin | DataKey::RegisterCounter | &DataKey::SignaturitProcess(_) => {
-                storage::Persistent::extend(env, self, min_ledger_to_live)
-            }
-        };
+        storage::Persistent::extend(env, self, min_ledger_to_live);
+
         self
     }
 
     fn remove(&self, env: &Env) {
-        match self {
-            DataKey::Admin | DataKey::RegisterCounter | &DataKey::SignaturitProcess(_) => {
-                storage::Persistent::remove(env, self)
-            }
-        }
+        storage::Persistent::remove(env, self)
     }
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SignaturitProcess {
-    pub id: u32,
     /**
      * The transaction escrow ID is the signature ID (uuid) from Signaturit.
      * It is an UUID (36 bytes length), for example: '6f6c974e-2910-11e4-b3d4-0aa7697eb409'
      */
-    pub signaturit_id: String,
+    pub id: String,
+    /**
+     * Oracle indentifier for this process
+     */
+    pub oracle_id: u32,
     /**
     The address where the callback response will be sent to.
      */
     pub send_to: Address,
+
+    pub status: SignatureResponse,
+}
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum SignatureResponse {
+    Failed = 0,
+    Completed = 1,
+    Wait = 2,
 }
