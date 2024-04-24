@@ -1,10 +1,6 @@
 #![cfg(test)]
 
-use soroban_sdk::{
-    testutils::Address as _,
-    token::{Client as TokenClient, StellarAssetClient},
-    Address, Env, String,
-};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, Symbol};
 
 pub mod oracle {
     soroban_sdk::contractimport!(
@@ -33,41 +29,14 @@ fn create_escrow_contract<'a>(env: &Env) -> EscrowClient<'a> {
     EscrowClient::new(&env, &contract_id)
 }
 
-pub mod notes_nft {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/notes_nft.wasm"
-    );
-    pub type NotesNFTClient<'a> = Client<'a>;
-}
-use notes_nft::NotesNFTClient;
-
-fn create_nft_contract<'a>(env: &Env) -> NotesNFTClient<'a> {
-    let contract_id = env.register_contract_wasm(None, notes_nft::WASM);
-    NotesNFTClient::new(&env, &contract_id)
-}
-
-fn create_token_contract<'a>(
-    env: &Env,
-    admin: &Address,
-) -> (TokenClient<'a>, StellarAssetClient<'a>) {
-    let contract_address = env.register_stellar_asset_contract(admin.clone());
-    (
-        TokenClient::new(env, &contract_address),
-        StellarAssetClient::new(env, &contract_address),
-    )
-}
-
-// keccak256(STOCKEN_ID_1)
-pub const STOCKEN_ID_1: &str = "6ef7e237bbddb133bb3504cad9e2ec7ff90c0c9b63567a632dbad8bb2b923728";
-// keccak256(STOCKEN_ID_2)
-pub const STOCKEN_ID_2: &str = "af8f0b8ba4749d7a83edcd03a18e3ee3807fca630f8a18e8e59be53ea15c9e95";
+// These topics are from EscrowTest
+pub const COMPLETED_TOPIC: Symbol = symbol_short!("COMP_TEST");
+pub const FAILED_TOPIC: Symbol = symbol_short!("FAIL_TEST");
 
 pub struct OracleTest<'a> {
     env: Env,
     oracle: OracleClient<'a>,
     escrow: EscrowClient<'a>,
-    nft_notes: NotesNFTClient<'a>,
-    token: TokenClient<'a>,
     alice: Address,
     bob: Address,
     admin: Address,
@@ -83,13 +52,6 @@ impl<'a> OracleTest<'a> {
 
         // ESCROW
         test_setup.escrow.initialize(&test_setup.oracle.address);
-
-        // NFT PROOF
-        let name = String::from_str(&test_setup.env, "Signaturit Notes NFT");
-        let symbol = String::from_str(&test_setup.env, "SN_NFT");
-        test_setup
-            .nft_notes
-            .initialize(&test_setup.escrow.address, &name, &symbol);
 
         return test_setup;
     }
@@ -108,23 +70,11 @@ impl<'a> OracleTest<'a> {
         // Create the contracts
         let escrow_client = create_escrow_contract(&env);
         let oracle_client = create_oracle_contract(&env);
-        let nft_client = create_nft_contract(&env);
-
-        let (token, token_admin) = create_token_contract(&env, &admin);
-
-        let amount: i128 = 1_000_000_000_000_000_000_000; // 1K tokens (18 decimals)
-
-        // Mint tokens for both addresses with both tokens
-        env.mock_all_auths();
-        token_admin.mint(&alice, &amount);
-        token_admin.mint(&bob, &amount);
 
         return OracleTest {
             env,
             oracle: oracle_client,
             escrow: escrow_client,
-            nft_notes: nft_client,
-            token,
             alice,
             bob,
             admin,

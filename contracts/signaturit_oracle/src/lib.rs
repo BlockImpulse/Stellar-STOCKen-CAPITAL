@@ -32,7 +32,8 @@ fn get_process_by_id(env: &Env, oracle_id: &u32) -> SignaturitProcess {
     }
 
     let signature_id: String = DataKey::OracleProcess(*oracle_id).get(&env).unwrap();
-    DataKey::SignaturitProcess(signature_id).get(&env).unwrap()
+
+    get_process_by_signature_id(env, &signature_id)
 }
 
 fn get_process_by_signature_id(env: &Env, signature_id: &String) -> SignaturitProcess {
