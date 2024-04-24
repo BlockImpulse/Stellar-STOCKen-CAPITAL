@@ -20,7 +20,7 @@ fn before_initialization() {
 }
 
 #[test]
-fn initialization_xd() {
+fn initialization() {
     let test = EscrowTest::setup_non_init();
 
     test.escrow.initialize(
