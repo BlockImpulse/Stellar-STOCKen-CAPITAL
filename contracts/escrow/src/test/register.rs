@@ -5,7 +5,7 @@ use core::ops::{Div, Mul};
 use std::string::ToString;
 
 use crate::{
-    events::EscrowEvent2,
+    events::EscrowEvent,
     test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
 };
 use soroban_sdk::{
@@ -180,7 +180,7 @@ fn new_register_proposal_already_picked() {
 
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent2::RegisterEscrow(
+        (EscrowEvent::RegisterEscrow(
             signaturit_id.clone(),
             stocken_id.clone(),
             0u32,
@@ -277,7 +277,7 @@ fn new_register_signature_process_exist() {
 
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent2::RegisterEscrow(
+        (EscrowEvent::RegisterEscrow(
             signaturit_id.clone(),
             stocken_id.clone(),
             0u32,
@@ -423,7 +423,7 @@ fn new_register() {
 
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent2::RegisterEscrow(
+        (EscrowEvent::RegisterEscrow(
             signaturit_id.clone(),
             stocken_id.clone(),
             0u32,

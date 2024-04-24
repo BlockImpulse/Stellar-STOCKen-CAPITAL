@@ -16,7 +16,7 @@ pub mod notes_nft {
     pub type NotesNFTClient<'a> = Client<'a>;
 }
 
-use events::EscrowEvent2;
+use events::EscrowEvent;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, token, vec, Address, Env, IntoVal, String, Symbol,
@@ -105,7 +105,7 @@ impl EscrowContract {
         DataKey::NFTNotesAddress.set(&env, &nft_notes_address);
 
         // Emit the Initialized event
-        EscrowEvent2::Initialized(asset_address, oracle_address, nft_notes_address).publish(&env);
+        EscrowEvent::Initialized(asset_address, oracle_address, nft_notes_address).publish(&env);
     }
 
     /**
@@ -135,7 +135,7 @@ impl EscrowContract {
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
 
         // Emit the NewProposal event
-        EscrowEvent2::NewProposal(propose.escrow_id, propose.owner).publish(&env);
+        EscrowEvent::NewProposal(propose.escrow_id, propose.owner).publish(&env);
     }
 
     pub fn register_escrow(
@@ -201,7 +201,7 @@ impl EscrowContract {
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
 
         // Emit the RegisterEscrow event
-        EscrowEvent2::RegisterEscrow(
+        EscrowEvent::RegisterEscrow(
             tx_register.id,
             tx_register.propose_id,
             tx_register.oracle_id,
@@ -254,7 +254,7 @@ impl EscrowContract {
         DataKey::SignatureProcess(signaturit_id.clone()).set(&env, &signature_process);
 
         // Emit the SignedCompleted event
-        EscrowEvent2::SignedCompleted(
+        EscrowEvent::SignedCompleted(
             signature_process.id,
             signature_process.propose_id,
             signature_process.buyer,
@@ -286,7 +286,7 @@ impl EscrowContract {
         propose.signature_tx_linked = NullableString::None;
 
         // Emit the SignedFailed event
-        EscrowEvent2::SignedFailed(
+        EscrowEvent::SignedFailed(
             signature_process.id,
             signature_process.propose_id,
             signature_process.buyer,

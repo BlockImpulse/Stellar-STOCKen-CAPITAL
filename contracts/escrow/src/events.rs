@@ -1,6 +1,6 @@
 use soroban_sdk::{vec, Address, Env, IntoVal, String, Val, Vec};
 
-pub enum EscrowEvent2 {
+pub enum EscrowEvent {
     Initialized(Address, Address, Address),
     NewProposal(String, Address),
     RegisterEscrow(String, String, u32, Address, i128),
@@ -8,19 +8,19 @@ pub enum EscrowEvent2 {
     SignedFailed(String, String, Address),
 }
 
-impl EscrowEvent2 {
+impl EscrowEvent {
     pub fn name(&self) -> &'static str {
         match self {
-            EscrowEvent2::Initialized(..) => stringify!(Initialized),
-            EscrowEvent2::NewProposal(..) => stringify!(NewProposal),
-            EscrowEvent2::RegisterEscrow(..) => stringify!(RegisterEscrow),
-            EscrowEvent2::SignedCompleted(..) => stringify!(SignedCompleted),
-            EscrowEvent2::SignedFailed(..) => stringify!(SignedFailed),
+            EscrowEvent::Initialized(..) => stringify!(Initialized),
+            EscrowEvent::NewProposal(..) => stringify!(NewProposal),
+            EscrowEvent::RegisterEscrow(..) => stringify!(RegisterEscrow),
+            EscrowEvent::SignedCompleted(..) => stringify!(SignedCompleted),
+            EscrowEvent::SignedFailed(..) => stringify!(SignedFailed),
         }
     }
     pub fn publish(&self, env: &Env) {
         match self {
-            EscrowEvent2::Initialized(asset_address, oracle_address, nft_notes_address) => {
+            EscrowEvent::Initialized(asset_address, oracle_address, nft_notes_address) => {
                 let values: Vec<Val> = vec![
                     env,
                     asset_address.into_val(env),
@@ -29,12 +29,12 @@ impl EscrowEvent2 {
                 ];
                 self.internal_publish(env, values);
             }
-            EscrowEvent2::NewProposal(escrow_id, proposer) => {
+            EscrowEvent::NewProposal(escrow_id, proposer) => {
                 let values: Vec<Val> =
                     vec![env, (*escrow_id).into_val(env), proposer.into_val(env)];
                 self.internal_publish(env, values);
             }
-            EscrowEvent2::RegisterEscrow(signaturit_id, propose_id, oracle_id, buyer, funds) => {
+            EscrowEvent::RegisterEscrow(signaturit_id, propose_id, oracle_id, buyer, funds) => {
                 let values: Vec<Val> = vec![
                     env,
                     signaturit_id.into_val(env),
@@ -45,7 +45,7 @@ impl EscrowEvent2 {
                 ];
                 self.internal_publish(env, values);
             }
-            EscrowEvent2::SignedCompleted(
+            EscrowEvent::SignedCompleted(
                 signaturit_id,
                 propose_id,
                 buyer,
@@ -64,7 +64,7 @@ impl EscrowEvent2 {
                 ];
                 self.internal_publish(env, values);
             }
-            EscrowEvent2::SignedFailed(signaturit_id, propose_id, buyer) => {
+            EscrowEvent::SignedFailed(signaturit_id, propose_id, buyer) => {
                 let values: Vec<Val> = vec![
                     env,
                     signaturit_id.into_val(env),
