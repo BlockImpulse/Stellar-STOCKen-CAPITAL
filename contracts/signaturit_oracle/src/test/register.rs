@@ -52,6 +52,44 @@ fn register_new_process() {
 }
 
 #[test]
+fn register_new_process_cross_call() {
+    let test = OracleTest::setup();
+
+    let signaturit_id_1 = String::from_str(&test.env, &Uuid::new_v4().to_string());
+    let signaturit_id_2 = String::from_str(&test.env, &Uuid::new_v4().to_string());
+
+    let oracle_id_1 = test.escrow.oracle_register(&signaturit_id_1);
+
+    let oracle_id_2 = test.escrow.oracle_register(&signaturit_id_2);
+
+    // assert_eq!(oracle_id, expected_id);
+
+    // Check NewSignatureProcess events
+    let event_expected_1 = (
+        test.oracle.address.clone(),
+        (OracleEvent::NewSignatureProcess(signaturit_id_1.clone(), oracle_id_1.clone()).name(),)
+            .into_val(&test.env),
+        (signaturit_id_1, oracle_id_1).into_val(&test.env),
+    );
+
+    let event_expected_2 = (
+        test.oracle.address.clone(),
+        (OracleEvent::NewSignatureProcess(signaturit_id_2.clone(), oracle_id_2.clone()).name(),)
+            .into_val(&test.env),
+        (signaturit_id_2, oracle_id_2).into_val(&test.env),
+    );
+
+    assert!(
+        test.env.events().all().contains(event_expected_1),
+        "NewSignatureProcess event not present"
+    );
+    assert!(
+        test.env.events().all().contains(event_expected_2),
+        "NewSignatureProcess event not present"
+    );
+}
+
+#[test]
 fn multiple_register_new_process() {
     let test = OracleTest::setup();
 

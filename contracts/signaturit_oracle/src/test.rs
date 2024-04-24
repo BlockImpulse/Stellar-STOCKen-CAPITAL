@@ -20,14 +20,16 @@ fn create_oracle_contract<'a>(env: &Env) -> OracleClient<'a> {
     contract_client
 }
 
-pub mod escrow {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/escrow.wasm");
+pub mod escrow_test {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/escrow_test.wasm"
+    );
     pub type EscrowClient<'a> = Client<'a>;
 }
-use escrow::EscrowClient;
+use escrow_test::EscrowClient;
 
 fn create_escrow_contract<'a>(env: &Env) -> EscrowClient<'a> {
-    let contract_id = env.register_contract_wasm(None, escrow::WASM);
+    let contract_id = env.register_contract_wasm(None, escrow_test::WASM);
     EscrowClient::new(&env, &contract_id)
 }
 
@@ -80,11 +82,7 @@ impl<'a> OracleTest<'a> {
         test_setup.oracle.initialize(&test_setup.admin);
 
         // ESCROW
-        test_setup.escrow.initialize(
-            &test_setup.token.address,
-            &test_setup.oracle.address,
-            &test_setup.nft_notes.address,
-        );
+        test_setup.escrow.initialize(&test_setup.oracle.address);
 
         // NFT PROOF
         let name = String::from_str(&test_setup.env, "Signaturit Notes NFT");
@@ -136,3 +134,4 @@ impl<'a> OracleTest<'a> {
 
 mod initialize;
 mod register;
+mod signature_response;
