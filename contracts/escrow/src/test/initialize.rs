@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    events::EscrowEvent,
+    events::EscrowEvent2,
     test::{escrow::EscrowError, EscrowTest},
 };
 use soroban_sdk::{testutils::Events, IntoVal};
@@ -20,7 +20,7 @@ fn before_initialization() {
 }
 
 #[test]
-fn initialization() {
+fn initialization_xd() {
     let test = EscrowTest::setup_non_init();
 
     test.escrow.initialize(
@@ -32,11 +32,17 @@ fn initialization() {
     // Check Initialized event
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent::Initialized.name(),).into_val(&test.env),
-        (
+        (EscrowEvent2::Initialized(
             test.token.address.clone(),
             test.oracle.address.clone(),
             test.nft_notes.address.clone(),
+        )
+        .name(),)
+            .into_val(&test.env),
+        (
+            &test.token.address,
+            &test.oracle.address,
+            &test.nft_notes.address,
         )
             .into_val(&test.env),
     );

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    events::EscrowEvent,
+    events::EscrowEvent2,
     test::{escrow::EscrowError, EscrowTest, STOCKEN_ID_1, STOCKEN_ID_2},
 };
 use soroban_sdk::{
@@ -35,8 +35,9 @@ fn add_proposal_already_proposed() {
 
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
-        (stocken_id.clone(), test.alice.clone()).into_val(&test.env),
+        (EscrowEvent2::NewProposal(stocken_id.clone(), test.alice.clone()).name(),)
+            .into_val(&test.env),
+        (stocken_id.clone(), &test.alice).into_val(&test.env),
     );
 
     assert!(
@@ -66,8 +67,9 @@ fn add_proposal() {
 
     let event_expected = (
         test.escrow.address.clone(),
-        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
-        (stocken_id.clone(), test.alice.clone()).into_val(&test.env),
+        (EscrowEvent2::NewProposal(stocken_id.clone(), test.alice.clone()).name(),)
+            .into_val(&test.env),
+        (stocken_id, &test.alice).into_val(&test.env),
     );
 
     assert!(
@@ -96,13 +98,15 @@ fn test_add_multiple_proposal() {
 
     let event_expected_1 = (
         test.escrow.address.clone(),
-        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (EscrowEvent2::NewProposal(stocken_id_1.clone(), proposer_address_1.clone()).name(),)
+            .into_val(&test.env),
         (stocken_id_1, proposer_address_1).into_val(&test.env),
     );
 
     let event_expected_2 = (
         test.escrow.address,
-        (EscrowEvent::NewProposal.name(),).into_val(&test.env),
+        (EscrowEvent2::NewProposal(stocken_id_2.clone(), proposer_address_2.clone()).name(),)
+            .into_val(&test.env),
         (stocken_id_2, proposer_address_2).into_val(&test.env),
     );
 

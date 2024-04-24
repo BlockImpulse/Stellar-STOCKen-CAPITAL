@@ -16,11 +16,10 @@ pub mod notes_nft {
     pub type NotesNFTClient<'a> = Client<'a>;
 }
 
-use events::EscrowEvent;
+use events::EscrowEvent2;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, token, vec, Address, Env, IntoVal, String, Symbol,
-    Val, Vec,
 };
 use storage::Storage;
 use types::{
@@ -106,12 +105,7 @@ impl EscrowContract {
         DataKey::NFTNotesAddress.set(&env, &nft_notes_address);
 
         // Emit the Initialized event
-        let mut values: Vec<Val> = Vec::new(&env);
-        values.push_back(asset_address.into_val(&env));
-        values.push_back(oracle_address.into_val(&env));
-        values.push_back(nft_notes_address.into_val(&env));
-
-        EscrowEvent::Initialized.publish(&env, values);
+        EscrowEvent2::Initialized(asset_address, oracle_address, nft_notes_address).publish(&env);
     }
 
     /**
@@ -141,10 +135,7 @@ impl EscrowContract {
         DataKey::Proposal(stocken_proposal_id).set(&env, &propose);
 
         // Emit the NewProposal event
-        let mut values: Vec<Val> = Vec::new(&env);
-        values.push_back(propose.escrow_id.into_val(&env));
-        values.push_back(proposer_address.into_val(&env));
-        EscrowEvent::NewProposal.publish(&env, values);
+        EscrowEvent2::NewProposal(propose.escrow_id, propose.owner).publish(&env);
     }
 
     pub fn register_escrow(
@@ -210,13 +201,14 @@ impl EscrowContract {
         DataKey::SignatureProcess(signaturit_id).set(&env, &tx_register);
 
         // Emit the RegisterEscrow event
-        let mut values: Vec<Val> = Vec::new(&env);
-        values.push_back(tx_register.id.into_val(&env));
-        values.push_back(tx_register.propose_id.into_val(&env));
-        values.push_back(tx_register.oracle_id.into_val(&env));
-        values.push_back(tx_register.buyer.into_val(&env));
-        values.push_back(tx_register.funds.into_val(&env));
-        EscrowEvent::RegisterEscrow.publish(&env, values);
+        EscrowEvent2::RegisterEscrow(
+            tx_register.id,
+            tx_register.propose_id,
+            tx_register.oracle_id,
+            tx_register.buyer,
+            tx_register.funds,
+        )
+        .publish(&env);
     }
 
     pub fn completed_signature(env: Env, signaturit_id: String, document_hash: String) {
@@ -262,14 +254,15 @@ impl EscrowContract {
         DataKey::SignatureProcess(signaturit_id.clone()).set(&env, &signature_process);
 
         // Emit the SignedCompleted event
-        let mut values: Vec<Val> = Vec::new(&env);
-        values.push_back(signature_process.id.into_val(&env));
-        values.push_back(signature_process.propose_id.into_val(&env));
-        values.push_back(signature_process.buyer.into_val(&env));
-        values.push_back(signature_process.receiver.into_val(&env));
-        values.push_back(signature_process.funds.into_val(&env));
-        values.push_back(signature_process.nft_proof_id.into_val(&env));
-        EscrowEvent::SignedCompleted.publish(&env, values);
+        EscrowEvent2::SignedCompleted(
+            signature_process.id,
+            signature_process.propose_id,
+            signature_process.buyer,
+            signature_process.receiver,
+            signature_process.funds,
+            token_id_minted,
+        )
+        .publish(&env);
     }
 
     pub fn failed_signature(env: Env, signaturit_id: String) {
@@ -293,11 +286,12 @@ impl EscrowContract {
         propose.signature_tx_linked = NullableString::None;
 
         // Emit the SignedFailed event
-        let mut values: Vec<Val> = Vec::new(&env);
-        values.push_back(signature_process.id.into_val(&env));
-        values.push_back(signature_process.propose_id.into_val(&env));
-        values.push_back(signature_process.buyer.into_val(&env));
-        EscrowEvent::SignedFailed.publish(&env, values);
+        EscrowEvent2::SignedFailed(
+            signature_process.id,
+            signature_process.propose_id,
+            signature_process.buyer,
+        )
+        .publish(&env);
     }
 
     // TODO: Request for cancel signature process
