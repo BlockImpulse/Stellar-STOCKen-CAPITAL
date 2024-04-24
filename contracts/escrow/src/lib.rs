@@ -87,6 +87,14 @@ impl EscrowContract {
         get_nft(&env)
     }
 
+    pub fn get_proposal(env: Env, escrow_id: String) -> EscrowProposal {
+        get_proposal(&env, escrow_id)
+    }
+
+    pub fn get_signature_tx_escrow(env: Env, signaturit_id: String) -> SignatureTxEscrow {
+        get_signature_tx_escrow(&env, signaturit_id)
+    }
+
     pub fn initialize(
         env: Env,
         asset_address: Address,
@@ -220,15 +228,28 @@ impl EscrowContract {
         let mut propose = get_proposal(&env, signature_process.clone().propose_id);
 
         // Release the funds to the owner of the propose
+        env.authorize_as_current_contract(vec![
+            &env,
+            InvokerContractAuthEntry::Contract(SubContractInvocation {
+                context: ContractContext {
+                    contract: get_asset(&env),
+                    fn_name: Symbol::new(&env, "transfer"),
+                    args: (
+                        env.current_contract_address(),
+                        signature_process.receiver.clone(),
+                        signature_process.funds.clone(),
+                    )
+                        .into_val(&env),
+                },
+                sub_invocations: vec![&env],
+            }),
+        ]);
         transfer_funds(
             &env,
             &env.current_contract_address(), // from
             &signature_process.receiver,     // to
             &signature_process.funds,        // amount
         );
-
-        signature_process.status = SignatureStatus::Completed;
-        propose.status = ProposalStatus::Completed;
 
         // Get the NFT client
         let nft_client = notes_nft::NotesNFTClient::new(&env, &get_nft(&env));
@@ -251,7 +272,11 @@ impl EscrowContract {
         let token_id_minted: u32 = nft_client.mint(&signature_process.buyer, &document_hash);
 
         signature_process.nft_proof_id = Some(token_id_minted);
+        signature_process.status = SignatureStatus::Completed;
         DataKey::SignatureProcess(signaturit_id.clone()).set(&env, &signature_process);
+
+        propose.status = ProposalStatus::Completed;
+        DataKey::Proposal(propose.escrow_id.clone()).set(&env, &propose);
 
         // Emit the SignedCompleted event
         EscrowEvent::SignedCompleted(
@@ -282,8 +307,11 @@ impl EscrowContract {
         );
 
         signature_process.status = SignatureStatus::Canceled;
+        DataKey::SignatureProcess(signature_process.id.clone()).set(&env, &signature_process);
+
         propose.status = ProposalStatus::Actived;
         propose.signature_tx_linked = NullableString::None;
+        DataKey::Proposal(propose.escrow_id.clone()).set(&env, &propose);
 
         // Emit the SignedFailed event
         EscrowEvent::SignedFailed(

@@ -5,7 +5,7 @@ extern crate std;
 use soroban_sdk::{
     testutils::Address as _,
     token::{Client as TokenClient, StellarAssetClient},
-    Address, Env,
+    Address, Env, String,
 };
 
 pub mod oracle {
@@ -86,6 +86,13 @@ impl<'a> EscrowTest<'a> {
             &test_setup.nft_notes.address,
         );
 
+        let name = String::from_str(&test_setup.env, "Signaturit Notes NFT");
+        let symbol = String::from_str(&test_setup.env, "SN_NFT");
+
+        test_setup
+            .nft_notes
+            .initialize(&test_setup.escrow.address, &name, &symbol);
+
         return test_setup;
     }
 
@@ -127,6 +134,7 @@ impl<'a> EscrowTest<'a> {
     }
 }
 
-pub mod add_proposal;
-pub mod initialize;
-pub mod register;
+mod add_proposal;
+mod initialize;
+mod register;
+mod signatures_response;
