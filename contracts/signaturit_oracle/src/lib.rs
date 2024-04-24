@@ -5,13 +5,19 @@ mod storage;
 mod types;
 
 use error::OracleError;
-use events::{REGISTER_NEW_SIGNATURE_TOPIC, SIGNATURE_RESPONSE_TOPIC};
+use events::OracleEvent;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, vec, Address, Env, IntoVal, String, Symbol,
 };
 use storage::Storage;
 use types::{DataKey, SignaturitProcess};
+
+pub mod escrow {
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/escrow.wasm");
+    pub type EscrowClient<'a> = Client<'a>;
+}
+use escrow::EscrowClient;
 
 fn check_initialization(env: &Env) {
     if !DataKey::Admin.has(env) {
@@ -28,6 +34,10 @@ pub struct SignaturitOracle;
 
 #[contractimpl]
 impl SignaturitOracle {
+    pub fn get_admin(env: Env) -> Address {
+        check_initialization(&env);
+        get_admin(&env)
+    }
     /**
     Initialize the contract with the given arguments, making the oracle ready
     to be used.
@@ -42,6 +52,8 @@ impl SignaturitOracle {
         }
 
         DataKey::Admin.set(&env, &admin);
+
+        OracleEvent::Initialized(admin).publish(&env);
     }
 
     /**
@@ -70,19 +82,20 @@ impl SignaturitOracle {
             send_to: caller,
         };
 
+        OracleEvent::NewSignatureProcess(signaturit_id, oracle_id).publish(&env);
+
         DataKey::SignaturitProcess(oracle_id).set(&env, &signature_process);
-
-        env.events().publish(
-            REGISTER_NEW_SIGNATURE_TOPIC,
-            (oracle_id.clone(), signaturit_id),
-        );
-
         DataKey::RegisterCounter.set(&env, &(oracle_id + 1));
 
         return oracle_id;
     }
 
-    pub fn signature_response(env: Env, oracle_id: u32, is_success: bool) {
+    pub fn signature_response(
+        env: Env,
+        oracle_id: u32,
+        is_success: bool,
+        document_hash: Option<String>,
+    ) {
         check_initialization(&env);
         get_admin(&env).require_auth();
 
@@ -90,8 +103,16 @@ impl SignaturitOracle {
             .get(&env)
             .unwrap();
 
+        let escrow_client = EscrowClient::new(&env, &signature_process.send_to);
+
         if is_success {
             // The signature proccess was completed (the stauts is `completed`)
+
+            // Require the document hash
+            if document_hash.is_none() {
+                // Throw error
+                panic_with_error!(env, OracleError::MissingDocHash);
+            }
 
             // Grant auth to call `completed_signature``
             env.authorize_as_current_contract(vec![
@@ -100,14 +121,19 @@ impl SignaturitOracle {
                     context: ContractContext {
                         contract: signature_process.send_to,
                         fn_name: Symbol::new(&env, "completed_signature"),
-                        args: (signature_process.signaturit_id.clone(),).into_val(&env),
+                        args: (
+                            signature_process.signaturit_id.clone(),
+                            document_hash.clone().unwrap(),
+                        )
+                            .into_val(&env),
                     },
                     sub_invocations: vec![&env],
                 }),
             ]);
 
-            // Call:
-            // (signature_process.send_to).completed_signature(signaturit_id)
+            // Call the escrow
+            escrow_client
+                .completed_signature(&signature_process.signaturit_id, &document_hash.unwrap());
         } else {
             // The signature process has failed (the staus is expired, canceled or declined)
 
@@ -122,16 +148,12 @@ impl SignaturitOracle {
                     sub_invocations: vec![&env],
                 }),
             ]);
-            // (signature_process.send_to).failed_signature(signaturit_id)
+
+            // Call failed
+            escrow_client.failed_signature(&signature_process.signaturit_id);
         }
 
-        env.events().publish(
-            SIGNATURE_RESPONSE_TOPIC,
-            (
-                signature_process.id,
-                signature_process.signaturit_id,
-                is_success,
-            ),
-        );
+        OracleEvent::SignatureResponse(signature_process.signaturit_id, oracle_id, is_success)
+            .publish(&env);
     }
 }

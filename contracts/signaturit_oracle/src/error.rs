@@ -8,4 +8,5 @@ pub enum OracleError {
     AlreadyInit = 1,
     OnlyAdmin = 2,
     SignatureIdAlredyExist = 3,
+    MissingDocHash = 4,
 }
