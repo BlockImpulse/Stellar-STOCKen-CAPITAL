@@ -26,6 +26,7 @@ fn register_new_process_not_init() {
 #[test]
 fn register_new_process() {
     let test = OracleTest::setup();
+    test.env.mock_all_auths();
 
     let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
 
@@ -54,6 +55,7 @@ fn register_new_process() {
 #[test]
 fn register_new_process_cross_call() {
     let test = OracleTest::setup();
+    test.env.mock_all_auths();
 
     let signaturit_id_1 = String::from_str(&test.env, &Uuid::new_v4().to_string());
     let signaturit_id_2 = String::from_str(&test.env, &Uuid::new_v4().to_string());
@@ -92,6 +94,7 @@ fn register_new_process_cross_call() {
 #[test]
 fn multiple_register_new_process() {
     let test = OracleTest::setup();
+    test.env.mock_all_auths();
 
     let mut expected_id: u32 = 0;
 
@@ -167,6 +170,7 @@ fn multiple_register_new_process() {
 #[test]
 fn register_new_process_already_exist() {
     let test = OracleTest::setup();
+    test.env.mock_all_auths();
 
     let signaturit_id = String::from_str(&test.env, &Uuid::new_v4().to_string());
 
