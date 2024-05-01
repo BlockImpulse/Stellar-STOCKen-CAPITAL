@@ -400,6 +400,7 @@ name = "escrow"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 
@@ -963,6 +964,7 @@ name = "signaturit_oracle"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 

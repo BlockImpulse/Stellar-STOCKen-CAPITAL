@@ -1,6 +1,5 @@
 #![no_std]
 mod events;
-mod storage;
 mod types;
 pub mod oracle {
     soroban_sdk::contractimport!(
