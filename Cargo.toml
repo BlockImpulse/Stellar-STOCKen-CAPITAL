@@ -8,6 +8,7 @@ members = [
 soroban-sdk = "20.3.2"
 uuid = "1.8.0"
 storage = { path = "./libs/storage" }
+oracle_traits = { path = "./libs/oracle_traits" }
 
 
 [profile.release]

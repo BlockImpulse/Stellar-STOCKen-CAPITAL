@@ -1,12 +1,11 @@
 #![no_std]
 mod error;
 mod events;
-mod oracle_traits;
 mod types;
 
 use error::OracleError;
 use events::OracleEvent;
-use oracle_traits::oracle_implementer::OracleImplementerClient;
+use oracle_traits::OracleConsumerClient;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, vec, Address, Env, IntoVal, String, Symbol,
@@ -128,7 +127,7 @@ impl SignaturitOracle {
         let mut signature_process = get_process_by_id(&env, &oracle_id);
 
         // The contract should implement the Trait
-        let implementer_client = OracleImplementerClient::new(&env, &signature_process.send_to);
+        let consumer_client = OracleConsumerClient::new(&env, &signature_process.send_to);
 
         if is_success {
             // The signature proccess was completed (the stauts is `completed`)
@@ -154,7 +153,7 @@ impl SignaturitOracle {
             ]);
 
             // Call the implementer with completed
-            implementer_client.completed_signature(&signature_process.id, &document_hash.unwrap());
+            consumer_client.completed_signature(&signature_process.id, &document_hash.unwrap());
 
             // Update status
             signature_process.status = SignatureResponse::Completed;
@@ -174,7 +173,7 @@ impl SignaturitOracle {
             ]);
 
             // Call the implementer with failed
-            implementer_client.failed_signature(&signature_process.id);
+            consumer_client.failed_signature(&signature_process.id);
 
             // Update status
             signature_process.status = SignatureResponse::Failed;
