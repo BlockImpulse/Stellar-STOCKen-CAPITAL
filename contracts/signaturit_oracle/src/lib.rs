@@ -2,13 +2,11 @@
 mod error;
 mod events;
 mod oracle_traits;
-mod storage;
 mod types;
-
-use oracle_traits::oracle_implementer::OracleImplementerClient;
 
 use error::OracleError;
 use events::OracleEvent;
+use oracle_traits::oracle_implementer::OracleImplementerClient;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, panic_with_error, vec, Address, Env, IntoVal, String, Symbol,
