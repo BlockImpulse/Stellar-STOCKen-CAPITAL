@@ -657,6 +657,7 @@ name = "notes_nft"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 
@@ -1195,6 +1196,13 @@ dependencies = [
  "serde",
  "serde_with",
  "stellar-strkey",
+]
+
+[[package]]
+name = "storage"
+version = "0.0.1"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]
