@@ -7,6 +7,7 @@ pub mod oracle {
     pub type OracleClient<'a> = Client<'a>;
 }
 
+use oracle_traits::OracleConsumer;
 use soroban_sdk::{
     auth::{ContractContext, InvokerContractAuthEntry, SubContractInvocation},
     contract, contractimpl, symbol_short, vec, Address, Env, IntoVal, String, Symbol,
@@ -61,13 +62,16 @@ impl EscrowTest {
 
         return oracle_id;
     }
+}
 
-    pub fn completed_signature(env: Env, signaturit_id: String, document_hash: String) {
+#[contractimpl]
+impl OracleConsumer for EscrowTest {
+    fn completed_signature(env: Env, signaturit_id: String, document_hash: String) {
         env.events()
             .publish((COMPLETED_TOPIC,), (signaturit_id, document_hash));
     }
 
-    pub fn failed_signature(env: Env, signaturit_id: String) {
+    fn failed_signature(env: Env, signaturit_id: String) {
         env.events().publish((FAILED_TOPIC,), signaturit_id);
     }
 }
