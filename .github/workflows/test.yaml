@@ -14,24 +14,11 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Build NFT Notes
-        working-directory: ./contracts/notes_nft
-        run: cargo build --target wasm32-unknown-unknown --release
+      - name: Install soroban-cli
+        run: cargo install soroban-cli --features opt
 
-      - name: Build Signaturit Oracle
-        working-directory: ./contracts/signaturit_oracle
-        run: cargo build --target wasm32-unknown-unknown --release
+      - name: Build the contract
+        run: make -C contracts build
 
-      - name: Build Escrow test
-        working-directory: ./contracts/escrow_test
-        run: cargo build --target wasm32-unknown-unknown --release
-
-      - name: Build Escrow
-        working-directory: ./contracts/escrow
-        run: cargo build --target wasm32-unknown-unknown --release
-
-      - name: Run tests
-        run: cargo test
-
-      # - name: Run tests
-      #   run: cargo build --target wasm32-unknown-unknown --release ; cargo build --target wasm32-unknown-unknown --release ; cargo test
+      - name: Run the test
+        run: make -C contracts test

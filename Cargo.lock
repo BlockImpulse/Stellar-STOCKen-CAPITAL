@@ -400,6 +400,7 @@ name = "escrow"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 
@@ -657,6 +658,7 @@ name = "notes_nft"
 version = "0.0.1"
 dependencies = [
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 
@@ -721,6 +723,13 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+
+[[package]]
+name = "oracle_traits"
+version = "0.0.1"
+dependencies = [
+ "soroban-sdk",
+]
 
 [[package]]
 name = "paste"
@@ -961,7 +970,9 @@ dependencies = [
 name = "signaturit_oracle"
 version = "0.0.1"
 dependencies = [
+ "oracle_traits",
  "soroban-sdk",
+ "storage",
  "uuid",
 ]
 
@@ -1195,6 +1206,13 @@ dependencies = [
  "serde",
  "serde_with",
  "stellar-strkey",
+]
+
+[[package]]
+name = "storage"
+version = "0.0.1"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]

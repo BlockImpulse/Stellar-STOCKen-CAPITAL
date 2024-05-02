@@ -3,16 +3,16 @@
 pub mod erc721traits;
 mod errors;
 mod events;
-mod storage;
 mod test;
 mod types;
+
+use storage::Storage;
 
 pub use crate::erc721traits::enumerable::ERC721Enumerable;
 pub use crate::erc721traits::erc721::ERC721;
 pub use crate::erc721traits::metadata::ERC721Metadata;
 pub use errors::*;
 pub use events::*;
-pub use storage::Storage;
 pub use types::*;
 
 use soroban_sdk::{

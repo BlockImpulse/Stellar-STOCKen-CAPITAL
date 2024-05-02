@@ -1,8 +1,8 @@
+#![no_std]
 use soroban_sdk::{contractclient, Env, String};
 
-/// Averr
-#[contractclient(name = "OracleImplementerClient")]
-pub trait OracleImplementerInterface {
+#[contractclient(name = "OracleConsumerClient")]
+pub trait OracleConsumer {
     /**
     Return a succesful response for a given signature process. This means that the
     signature process was completed and the parites signed
