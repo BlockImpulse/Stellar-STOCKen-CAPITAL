@@ -1,3 +1,5 @@
+![image](https://github.com/BlockImpulse/Stellar-STOCKen-CAPITAL/assets/81595884/d374b07e-0eca-4e5c-a636-7fc85c9f3753)
+
 # Stocken Capital Stellar Smart Contracts
 
 The project offer an innovative solution for secure and transparent financial transactions. Leveraging the power of the Stellar blockchain, Stocken Capital introduces a robust system of smart contracts designed to revolutionize how agreements are managed and transactions are executed.
