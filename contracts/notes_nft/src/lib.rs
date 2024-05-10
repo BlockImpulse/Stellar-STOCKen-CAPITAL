@@ -20,7 +20,7 @@ use soroban_sdk::{
 };
 
 fn get_admin(env: &Env) -> Address {
-    Admin::Escrow.get(env).unwrap()
+    Admin::Admin.get(env).unwrap()
 }
 
 #[contract]
@@ -28,11 +28,11 @@ pub struct NotesNFTContract;
 
 #[contractimpl]
 impl NotesNFTContract {
-    pub fn initialize(env: Env, escrow: Address, name: String, symbol: String) {
-        if Admin::Escrow.has(&env) {
+    pub fn initialize(env: Env, admin: Address, name: String, symbol: String) {
+        if Admin::Admin.has(&env) {
             panic_with_error!(env, Error::AlreadyInit);
         }
-        Admin::Escrow.set(&env, &escrow);
+        Admin::Admin.set(&env, &admin);
 
         env.storage().instance().extend_ttl(10000, 10000);
 
@@ -44,7 +44,7 @@ impl NotesNFTContract {
         DataKeyEnumerable::TokenIdToIndex.set(&env, &Map::<u32, u32>::new(&env));
 
         env.events()
-            .publish((INITIALIZED_TOPIC,), (escrow, name, symbol));
+            .publish((INITIALIZED_TOPIC,), (admin, name, symbol));
     }
 
     pub fn admin(env: Env) -> Address {

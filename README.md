@@ -1,6 +1,6 @@
-![image](https://github.com/BlockImpulse/Stellar-STOCKen-CAPITAL/assets/81595884/d374b07e-0eca-4e5c-a636-7fc85c9f3753)
-
 # Stocken Capital Stellar Smart Contracts
+
+![image](https://github.com/BlockImpulse/Stellar-STOCKen-CAPITAL/assets/81595884/d374b07e-0eca-4e5c-a636-7fc85c9f3753)
 
 The project offer an innovative solution for secure and transparent financial transactions. Leveraging the power of the Stellar blockchain, Stocken Capital introduces a robust system of smart contracts designed to revolutionize how agreements are managed and transactions are executed.
 
@@ -59,6 +59,38 @@ make -C contracts test
 ```
 
 This will make the build and execute the test for each contract
+
+### Deployments guide
+
+Deploying the project's contracts is a straightforward process, although it requires an adequately funded account. To facilitate this, the Soroban CLI offers a convenient method for generating accounts and funding them on the testnet (funding on the mainnet requires separate arrangements). To begin, ensure that you've added the network to your Soroban profile if you haven't already:
+
+```shell
+soroban network add \
+  --global testnet \
+  --rpc-url https://soroban-testnet.stellar.org:443 \
+  --network-passphrase "Test SDF Network ; September 2015"
+```
+
+Next, generate the account. In this example, we'll name it `admin`:
+
+```shell
+soroban keys generate --global admin --network testnet
+```
+
+From project's root, now just simply run the Makefile with deploy target and with the correct params:
+
+```shell
+make -C contracts deploy \
+  ACCOUNT=<ACCOUNT_NAME> \
+  ASSET=<ASSET_ADDRESS> \
+  NFT_NAME=<NAME_OF_THE_NFT> \
+  NFT_SYMBOL=<SYMBOL_OF_THE_NFT>
+```
+
+- `ACCOUNT_NAME` is the name of the account that you generated (We used `admin` in the example). This address will be the deployer and the admin on the Oracle contract.
+- `ASSET_ADDRESS` is the asset address that the escrow will be use on the transactions.
+- `NAME_OF_THE_NFT` is the name that the NFT Notes will have. If you provided a name with spaces, wrap it with quotes (`NFT_NAME="My NFT name"`)
+- `SYMBOL_OF_THE_NFT` is the symbol that the NFT Notes will have.
 
 ### Special Thanks
 
