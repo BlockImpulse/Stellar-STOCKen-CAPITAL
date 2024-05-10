@@ -77,12 +77,20 @@ Next, generate the account. In this example, we'll name it `admin`:
 soroban keys generate --global admin --network testnet
 ```
 
-Now just simply run the Makefile with deploy option
+From project's root, now just simply run the Makefile with deploy target and with the correct params:
 
 ```shell
-# From project's root
-make -C contracts deploy
+make -C contracts deploy \
+  ACCOUNT=<ACCOUNT_NAME> \
+  ASSET=<ASSET_ADDRESS> \
+  NFT_NAME=<NAME_OF_THE_NFT> \
+  NFT_SYMBOL=<SYMBOL_OF_THE_NFT>
 ```
+
+- `ACCOUNT_NAME` is the name of the account that you generated (We used `admin` in the example). This address will be the deployer and the admin on the Oracle contract.
+- `ASSET_ADDRESS` is the asset address that the escrow will be use on the transactions.
+- `NAME_OF_THE_NFT` is the name that the NFT Notes will have. If you provided a name with spaces, wrap it with quotes (`NFT_NAME="My NFT name"`)
+- `SYMBOL_OF_THE_NFT` is the symbol that the NFT Notes will have.
 
 ### Special Thanks
 
