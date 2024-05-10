@@ -60,6 +60,12 @@ make -C contracts test
 
 This will make the build and execute the test for each contract
 
+### Special Thanks
+
+The Stellar community has been invaluable; their support on various channels has been truly awesome. We extend our gratitude to all those who have helped and responded to our inquiries. In particular, we wish to express our deep appreciation to [@esteblock](https://github.com/esteblock) for his invaluable guidance, corrections, and assistance in connecting us with the right people.
+
+Additionally, we extend special thanks to [@ajoseerazo](https://github.com/ajoseerazo) for aiding us in integrating the Stellar Ecosystem Proposal #30 (SEP30) for non-custodial wallets. His guidance and contributions regarding the utilization of the [django-polaris](https://django-polaris.readthedocs.io/en/stable/) package have been key in successfully implementing the various processes required for SEP30 integration.
+
 ## Contributions
 
 Contributions to the project are highly welcomed! If there are any suggestions, fixes, or bug reports, feel free to submit a [pull request](https://github.com/BlockImpulse/Stellar-STOCKen-CAPITAL/pulls) or open an [issue](https://github.com/BlockImpulse/Stellar-STOCKen-CAPITAL/issues) on GitHub.
